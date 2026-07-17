@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aradel — Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/css/styles.css"/>
+  <style>
+    .quick-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:0 16px; margin-bottom:20px; }
+    .quick-item { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 8px; border-radius:16px; background:var(--paper); box-shadow:var(--shadow); cursor:pointer; font-size:11px; font-weight:600; color:var(--ink); -webkit-tap-highlight-color:transparent; transition:transform .15s; }
+    .quick-item:active { transform:scale(.95); }
+    .quick-item-icon { font-size:23px; }
+    .sec-row { display:flex; align-items:center; justify-content:space-between; padding:0 16px; margin-bottom:10px; }
+    .sec-row h2 { font-family:'Fraunces',serif; font-size:16px; font-weight:600; }
+    .sec-row a { font-size:13px; color:var(--red); font-weight:600; }
+    .income-strip { background:var(--success-bg); border-radius:16px; margin:0 16px 16px; padding:16px; display:flex; align-items:center; gap:12px; }
+    .income-strip .ic { font-size:26px; }
+    .income-strip .txt strong { display:block; font-size:13px; font-weight:700; color:var(--success); }
+    .income-strip .txt span { font-size:11px; color:#0F7B4E; opacity:.8; }
+    .mini-product { background:var(--paper); border-radius:16px; box-shadow:var(--shadow); padding:14px 16px; margin:0 16px 10px; display:flex; align-items:center; justify-content:space-between; }
+    .mp-name { font-size:14px; font-weight:700; color:var(--ink); }
+    .mp-prog { font-size:12px; color:var(--muted); margin-top:2px; }
+    .mp-earn { font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:var(--success); }
+    .prog-bar { height:4px; background:var(--bg); border-radius:4px; margin-top:6px; overflow:hidden; width:120px; }
+    .prog-fill { height:100%; background:var(--red); border-radius:4px; }
+  </style>
+</head>
+<body data-supabase-url="YOUR_SUPABASE_URL" data-supabase-anon="YOUR_SUPABASE_ANON_KEY">
+<div class="page-wrap">
+  <div style="background:var(--paper);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50">
+    <div>
+      <div style="font-size:12px;color:var(--muted)">Good day 👋</div>
+      <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--ink)" data-auth="full_name">User</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="vip-badge vip-0" data-vip style="font-size:11px">Member</span>
+      <a class="menu-icon" href="notifications.html" style="width:36px;height:36px;position:relative">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;align-items:center;justify-content:center">!</span></a>
+    </div>
+  </div>
+
+  <div class="hero-card anim anim-1">
+    <div style="position:relative;z-index:1">
+      <div class="hero-label">Total Balance</div>
+      <div class="hero-amount" id="walletBalance">₦0.00</div>
+      <div style="font-size:12px;opacity:.8">Ref: <span data-auth="referral_code" style="font-weight:700">—</span></div>
+      <div class="hero-actions">
+        <button class="hero-btn fill" onclick="location.href='recharge.html'">+ Deposit</button>
+        <button class="hero-btn ghost" onclick="location.href='withdraw.html'">↑ Withdraw</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section anim anim-2">
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="statDeposit">₦0</div><div class="stat-lbl">Deposited</div></div>
+      <div class="stat-box"><div class="stat-val" id="statProfit">₦0</div><div class="stat-lbl">Profit</div></div>
+      <div class="stat-box"><div class="stat-val" id="statRef">₦0</div><div class="stat-lbl">Referral</div></div>
+    </div>
+  </div>
+
+  <div class="income-strip anim anim-2" id="incomeStrip" style="display:none">
+    <div class="ic">🌙</div>
+    <div class="txt">
+      <strong>Income credits automatically at midnight</strong>
+      <span>No action needed — check back tomorrow for today's earnings</span>
+    </div>
+  </div>
+
+  <div class="quick-grid anim anim-3">
+    <a class="quick-item" href="products.html"><span class="quick-item-icon">📦</span>Products</a>
+    <a class="quick-item" href="team.html"><span class="quick-item-icon">👥</span>My Team</a>
+    <a class="quick-item" href="daily-checkin.html"><span class="quick-item-icon">📅</span>Check In</a>
+    <a class="quick-item" href="gift-code.html"><span class="quick-item-icon">🎁</span>Gift Code</a>
+    <a class="quick-item" href="recharge-history.html"><span class="quick-item-icon">📋</span>History</a>
+    <a class="quick-item" href="messages.html"><span class="quick-item-icon">✉️</span>Messages</a>
+    <a class="quick-item" href="bank-card.html"><span class="quick-item-icon">💳</span>Bank Card</a>
+    <a class="quick-item" href="profile.html"><span class="quick-item-icon">👤</span>Profile</a>
+  </div>
+
+  <div class="sec-row anim anim-4"><h2>Active Investments</h2><a href="my-investments.html">View all</a></div>
+  <div id="activeProducts"><div class="loader-wrap"><div class="loader"></div></div></div>
+
+  <div class="sec-row anim anim-4" style="margin-top:8px"><h2>Recent Transactions</h2><a href="recharge-history.html">View all</a></div>
+  <div class="card" style="margin:0 16px 20px" id="recentTx"><div class="loader-wrap"><div class="loader"></div></div></div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="location.href='dashboard.html'"><span class="nav-icon">🏠</span>Home</button>
+  <button class="nav-item" onclick="location.href='products.html'"><span class="nav-icon">📦</span>Products</button>
+  <button class="nav-item" onclick="location.href='team.html'"><span class="nav-icon">👥</span>Team</button>
+  <button class="nav-item" onclick="location.href='profile.html'"><span class="nav-icon">👤</span>Profile</button>
+</nav>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase.js" defer></script>
+<script src="assets/js/auth.js" defer></script>
+<script>
+(function(){
+  function waitSb(cb){if(window.sb&&window.AradelAuth){cb();return;}var t=setInterval(function(){if(window.sb&&window.AradelAuth){clearInterval(t);cb();}},50);}
+  waitSb(async function(){
+    var s=await window.AradelAuth.requireAuth(); if(!s)return;
+    var uid=s.user.id;
+    await window.AradelAuth.loadProfile(uid);
+
+    var {data:w}=await window.sb.from("wallets").select("*").eq("user_id",uid).single();
+    if(w){
+      document.getElementById("walletBalance").textContent=window.AradelAuth.money(w.balance);
+      document.getElementById("statDeposit").textContent="₦"+Number(w.total_deposit||0).toLocaleString();
+      document.getElementById("statProfit").textContent="₦"+Number(w.total_profit||0).toLocaleString();
+      document.getElementById("statRef").textContent="₦"+Number(w.total_referral_bonus||0).toLocaleString();
+    }
+
+    var {data:prods}=await window.sb.from("user_products").select("*, products(name)").eq("user_id",uid).eq("status","active").limit(3);
+    var ap=document.getElementById("activeProducts");
+    if(!prods||!prods.length){
+      ap.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>No active investments yet.<br><a href="products.html" style="color:var(--red);font-weight:700">Browse products →</a></p></div>';
+    } else {
+      document.getElementById("incomeStrip").style.display="flex";
+      ap.innerHTML=prods.map(function(p){
+        var pct=p.duration_days?Math.min(100,Math.round((p.days_collected/p.duration_days)*100)):0;
+        return '<div class="mini-product"><div><div class="mp-name">'+p.products?.name+'</div><div class="mp-prog">'+p.days_collected+'/'+p.duration_days+' days</div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div></div><div class="mp-earn">+'+window.AradelAuth.money(p.daily_income)+'/day</div></div>';
+      }).join("");
+    }
+
+    var {data:txs}=await window.sb.from("wallet_transactions").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(5);
+    var txWrap=document.getElementById("recentTx");
+    if(!txs||!txs.length){ txWrap.innerHTML='<div class="empty"><p>No transactions yet.</p></div>'; }
+    else {
+      txWrap.innerHTML=txs.map(function(t){
+        var isCredit=t.amount>0;
+        return '<div class="list-item"><div><div class="li-title">'+t.description+'</div><div class="li-sub">'+window.AradelAuth.timeAgo(t.created_at)+'</div></div><div class="li-amount '+(isCredit?"credit":"debit")+'">'+(isCredit?"+":"")+window.AradelAuth.money(Math.abs(t.amount))+'</div></div>';
+      }).join("");
+    }
+
+    var {count}=await window.sb.from("messages").select("id",{count:"exact",head:true}).or("user_id.eq."+uid+",user_id.is.null").eq("is_read",false);
+    if(count>0){ var b=document.getElementById("notifBadge"); b.style.display="flex"; b.textContent=count>9?"9+":count; }
+  });
+})();
+</script>
+</body>
+      </html>
+      
