@@ -1,1 +1,93 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aradel — My Investments</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/css/styles.css"/>
+  <style>
+    .auto-hero { background:linear-gradient(155deg,var(--red),var(--red-dark)); padding:26px 20px; color:#fff; text-align:center; }
+    .auto-icon { font-size:36px; margin-bottom:8px; }
+    .auto-title { font-family:'Fraunces',serif; font-size:19px; font-weight:600; }
+    .auto-sub { font-size:13px; opacity:.85; margin-top:6px; line-height:1.5; }
+    .up-card { background:var(--paper); border-radius:16px; box-shadow:var(--shadow); margin:0 16px 12px; overflow:hidden; }
+    .up-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .up-name { font-size:15px; font-weight:700; color:var(--ink); }
+    .up-body { padding:14px 16px; }
+    .up-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+    .us-val { font-family:'Fraunces',serif; font-size:14px; font-weight:600; color:var(--red); }
+    .us-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+    .prog-bar { height:6px; background:var(--bg); border-radius:6px; overflow:hidden; }
+    .prog-fill { height:100%; background:var(--red); border-radius:6px; transition:width .4s; }
+    .prog-label { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px; }
+    .status-done { background:var(--success-bg); color:var(--success); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+    .last-credit { font-size:11px; color:var(--muted); margin-top:8px; text-align:center; padding-top:8px; border-top:1px dashed var(--border); }
+  </style>
+</head>
+<body data-supabase-url="YOUR_SUPABASE_URL" data-supabase-anon="YOUR_SUPABASE_ANON_KEY">
+<div class="page-wrap">
+  <div class="topbar"><a class="back-btn" href="profile.html">‹</a><span class="topbar-title">📦 My Investments</span></div>
+
+  <div class="auto-hero">
+    <div class="auto-icon">🌙</div>
+    <div class="auto-title">Income drops automatically</div>
+    <div class="auto-sub">Every active plan below credits its daily income to your wallet automatically at midnight — nothing to tap, nothing to remember.</div>
+  </div>
+
+  <div style="padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:600">Active</span>
+    <a href="products.html" style="font-size:13px;color:var(--red);font-weight:600">+ Buy More</a>
+  </div>
+  <div id="prodList"><div class="loader-wrap"><div class="loader"></div></div></div>
+
+  <div style="padding:16px 16px 8px;font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin-top:4px">Completed</div>
+  <div id="doneList"></div>
+  <div style="height:16px"></div>
+</div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase.js" defer></script>
+<script src="assets/js/auth.js" defer></script>
+<script>
+(function(){
+  function waitSb(cb){if(window.sb&&window.AradelAuth){cb();return;}var t=setInterval(function(){if(window.sb&&window.AradelAuth){clearInterval(t);cb();}},50);}
+  waitSb(async function(){
+    var s=await window.AradelAuth.requireAuth(); if(!s)return;
+    var uid=s.user.id;
+    var {data:prods}=await window.sb.from("user_products").select("*,products(name,description)").eq("user_id",uid).order("created_at",{ascending:false});
+    var active=(prods||[]).filter(function(p){return p.status==="active";});
+    var done=(prods||[]).filter(function(p){return p.status==="completed";});
+
+    var el=document.getElementById("prodList");
+    if(!active.length){
+      el.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>No active investments.<br><a href="products.html" style="color:var(--red);font-weight:700">Browse products →</a></p></div>';
+    } else {
+      el.innerHTML=active.map(function(p){
+        var pct=p.duration_days?Math.min(100,Math.round((p.days_collected/p.duration_days)*100)):0;
+        var lastCredit = p.last_claim_date ? new Date(p.last_claim_date).toDateString() : "Not yet — starts tomorrow";
+        return '<div class="up-card"><div class="up-header"><div><div class="up-name">'+p.products?.name+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Started '+new Date(p.start_date).toLocaleDateString()+'</div></div></div>'+
+          '<div class="up-body"><div class="up-stats"><div><div class="us-val">'+window.AradelAuth.money(p.daily_income)+'</div><div class="us-lbl">Daily</div></div>'+
+          '<div><div class="us-val">'+p.days_collected+'/'+p.duration_days+'</div><div class="us-lbl">Days</div></div>'+
+          '<div><div class="us-val">'+window.AradelAuth.money(p.total_earned)+'</div><div class="us-lbl">Earned</div></div></div>'+
+          '<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div><div class="prog-label"><span>Progress</span><span>'+pct+'%</span></div>'+
+          '<div class="last-credit">🌙 Last credited: '+lastCredit+'</div></div></div>';
+      }).join("");
+    }
+
+    var dl=document.getElementById("doneList");
+    if(done.length){
+      dl.innerHTML=done.map(function(p){
+        return '<div class="up-card"><div class="up-header"><div class="up-name">'+p.products?.name+'</div><span class="status-done">✅ Completed</span></div>'+
+          '<div class="up-body"><div class="up-stats"><div><div class="us-val">'+p.duration_days+'d</div><div class="us-lbl">Duration</div></div>'+
+          '<div><div class="us-val">'+window.AradelAuth.money(p.total_earned)+'</div><div class="us-lbl">Total Earned</div></div>'+
+          '<div><div class="us-val">'+window.AradelAuth.money(p.amount_paid)+'</div><div class="us-lbl">Invested</div></div></div></div></div>';
+      }).join("");
+    } else {
+      dl.innerHTML='<div class="empty" style="padding:20px"><p style="font-size:13px;color:var(--muted)">No completed investments yet.</p></div>';
+    }
+  });
+})();
+</script>
+</body>
+</html>
