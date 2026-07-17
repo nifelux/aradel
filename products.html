@@ -3,32 +3,211 @@
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Aradel — Products</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/css/styles.css"/>
   <style>
-    .tabs { display:flex; gap:8px; padding:16px; overflow-x:auto; scrollbar-width:none; }
-    .tabs::-webkit-scrollbar{display:none}
-    .tab { flex-shrink:0; padding:8px 20px; border-radius:30px; font-size:13px; font-weight:700; cursor:pointer; border:2px solid var(--border); background:var(--paper); color:var(--muted); transition:all .15s; }
-    .tab.on { background:var(--red); border-color:var(--red); color:#fff; }
-    .vip-lock { background:var(--red-tint); border-radius:16px; margin:0 16px 16px; padding:14px 16px; border:1.5px solid #F3D9DE; }
-    .vip-lock h3 { font-family:'Fraunces',serif; font-size:14px; color:var(--red); margin-bottom:4px; }
-    .vip-lock p { font-size:12px; color:var(--muted); }
-    .product-card { margin:0 16px 14px; background:var(--paper); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
-    .product-header { padding:18px 16px; position:relative; background:linear-gradient(155deg,var(--red),var(--red-dark)); }
-    .product-type-badge { position:absolute; top:12px; right:12px; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:800; background:rgba(255,255,255,.2); color:#fff; }
-    .product-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); }
-    .pstat { background:var(--paper); padding:12px; text-align:center; }
-    .pstat-val { font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:var(--red); }
-    .pstat-lbl { font-size:10px; color:var(--muted); margin-top:2px; text-transform:uppercase; }
-    .product-footer { padding:14px 16px; border-top:1px solid var(--border); }
-    .bought-chip { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px; border-radius:30px; background:var(--bg); font-size:14px; font-weight:700; color:var(--muted); }
+    :root{
+      --red:#C81E3A; --red-dark:#8F1128; --red-light:#E85C74; --red-tint:#FBEAEE;
+      --gold:#D4AF37; --gold-light:#F0D584;
+      --cream:#FBF6EC; --paper:#FFFFFF; --bg:#F5F1E8;
+      --ink:#1B1A22; --ink-soft:#4A4750; --muted:#8B8680;
+      --border:rgba(27,26,34,0.07);
+      --success:#1B9E6B; --success-bg:#E6F6EE;
+      --danger:#D6435C; --danger-bg:#FBEAEE;
+      --shadow-sm:0 2px 10px rgba(27,26,34,0.05);
+      --shadow-md:0 10px 30px rgba(27,26,34,0.08);
+      --shadow-lg:0 20px 60px rgba(27,26,34,0.14);
+      --radius-sm:14px; --radius-md:20px; --radius-lg:28px; --radius-xl:32px;
+      --ease:cubic-bezier(.22,1,.36,1);
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;background:var(--bg);
+      background-image:
+        radial-gradient(circle at 100% 0%, rgba(212,175,55,0.10) 0%, transparent 45%),
+        radial-gradient(circle at 0% 30%, rgba(200,30,58,0.05) 0%, transparent 40%);
+      background-attachment:fixed;
+      font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      color:var(--ink); -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    }
+    .page-wrap{max-width:520px;margin:0 auto;padding-bottom:110px;}
+    a{text-decoration:none;color:inherit;}
+    button{font-family:inherit;}
+
+    .anim{opacity:0;transform:translateY(16px);}
+    .anim.in{animation:riseIn .6s var(--ease) forwards;}
+    @keyframes riseIn{to{opacity:1;transform:translateY(0);}}
+    @media (prefers-reduced-motion: reduce){ .anim{opacity:1;transform:none;animation:none;} }
+
+    /* ============================================================
+       TOPBAR (glass, matches app-header on other pages)
+       ============================================================ */
+    .topbar{
+      position:sticky;top:0;z-index:50;
+      display:flex;align-items:center;gap:10px;
+      padding:18px 20px;
+      background:rgba(251,246,236,0.72);
+      backdrop-filter:blur(20px) saturate(160%);
+      -webkit-backdrop-filter:blur(20px) saturate(160%);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar-title{font-family:'Fraunces',serif;font-size:18px;font-weight:700;letter-spacing:-.01em;}
+    .vip-badge{
+      font-size:11px;font-weight:700;letter-spacing:.03em;padding:6px 12px;border-radius:999px;
+      background:linear-gradient(135deg,var(--gold-light),var(--gold));
+      color:#4A3A05;box-shadow:0 4px 14px rgba(212,175,55,0.35);
+    }
+
+    /* ============================================================
+       TABS
+       ============================================================ */
+    .tabs{display:flex;gap:9px;padding:18px 16px 6px;overflow-x:auto;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{
+      flex-shrink:0;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;cursor:pointer;
+      border:1.5px solid var(--border);background:var(--paper);color:var(--muted);
+      box-shadow:var(--shadow-sm);
+      transition:all .2s var(--ease);
+    }
+    .tab.on{
+      background:linear-gradient(135deg,var(--red),var(--red-dark));
+      border-color:var(--red);color:#fff;box-shadow:0 8px 22px rgba(200,30,58,0.32);
+      transform:translateY(-1px);
+    }
+    .tab:active{transform:scale(.95);}
+
+    /* ============================================================
+       VIP LOCK BANNER
+       ============================================================ */
+    .vip-lock{
+      position:relative;overflow:hidden;
+      background:linear-gradient(135deg,var(--red-tint),#FDF6F7);
+      border-radius:var(--radius-md);margin:6px 16px 18px;padding:18px 18px;
+      border:1.5px solid #F3D9DE;box-shadow:var(--shadow-sm);
+    }
+    .vip-lock::before{
+      content:"🔒";position:absolute;font-size:70px;right:-6px;bottom:-24px;opacity:.08;
+    }
+    .vip-lock h3{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--red);margin:0 0 5px;position:relative;z-index:1;}
+    .vip-lock p{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0;position:relative;z-index:1;}
+    .vip-lock a{color:var(--red);font-weight:700;font-size:13px;display:inline-block;margin-top:8px;position:relative;z-index:1;}
+
+    /* ============================================================
+       PRODUCT CARDS (markup produced by original JS — classes unchanged)
+       ============================================================ */
+    .product-card{
+      margin:0 16px 16px;background:var(--paper);border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-md);border:1px solid var(--border);overflow:hidden;
+      transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+    }
+    .product-card:active{transform:scale(.99);}
+    .product-header{
+      padding:22px 18px 20px;position:relative;overflow:hidden;
+    }
+    .product-header::before{
+      content:"";position:absolute;width:150px;height:150px;border-radius:50%;
+      background:rgba(255,255,255,0.10);top:-60px;right:-40px;
+    }
+    .product-header::after{
+      content:"";position:absolute;width:110px;height:110px;border-radius:50%;
+      background:rgba(212,175,55,0.16);bottom:-50px;left:-30px;
+    }
+    .product-type-badge{
+      position:absolute;top:14px;right:14px;padding:4px 12px;border-radius:20px;
+      font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+      background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(4px);z-index:1;
+    }
+    .product-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);}
+    .pstat{background:var(--paper);padding:14px 8px;text-align:center;}
+    .pstat-val{font-family:'Fraunces',serif;font-size:15.5px;font-weight:700;color:var(--red);letter-spacing:-.01em;}
+    .pstat-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;}
+    .product-footer{padding:16px 18px;border-top:1px solid var(--border);}
+    .bought-chip{
+      display:flex;align-items:center;justify-content:center;gap:6px;padding:13px;border-radius:30px;
+      background:var(--success-bg);font-size:13.5px;font-weight:700;color:var(--success);
+    }
+
+    /* ============================================================
+       BUTTONS (used by product-footer Buy Now + modal)
+       ============================================================ */
+    .btn{
+      padding:14px;border-radius:16px;font-size:14.5px;font-weight:700;border:none;cursor:pointer;
+      width:100%;transition:transform .16s var(--ease),box-shadow .16s var(--ease);
+    }
+    .btn:active{transform:scale(.96);}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-primary{
+      background:linear-gradient(135deg,var(--red),var(--red-dark));color:#fff;
+      box-shadow:0 10px 26px rgba(200,30,58,0.32);
+    }
+    .btn-ghost{background:var(--bg);color:var(--ink-soft);}
+
+    /* ============================================================
+       EMPTY / LOADER (shared)
+       ============================================================ */
+    .empty{padding:44px 20px;text-align:center;color:var(--muted);}
+    .empty-icon{font-size:36px;margin-bottom:10px;}
+    .loader-wrap{display:flex;justify-content:center;padding:34px 0;}
+    .loader{width:26px;height:26px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--red);animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ============================================================
+       PURCHASE MODAL (bottom sheet)
+       ============================================================ */
+    #modal{position:fixed;inset:0;background:rgba(27,26,34,.55);backdrop-filter:blur(3px);z-index:200;align-items:flex-end;justify-content:center;}
+    .modal-sheet{
+      background:var(--paper);border-radius:28px 28px 0 0;padding:26px 24px calc(24px + env(safe-area-inset-bottom));
+      width:100%;max-width:480px;box-shadow:0 -20px 60px rgba(27,26,34,0.25);
+      animation:sheetUp .3s var(--ease);
+    }
+    @keyframes sheetUp{from{transform:translateY(30px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
+    .modal-sheet h3{font-family:'Fraunces',serif;font-size:19px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em;}
+    .modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+    .modal-details{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:18px;}
+    .modal-row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;}
+    .modal-row + .modal-row{margin-top:10px;}
+    .modal-row span{color:var(--muted);}
+    .alert{font-size:12.5px;border-radius:12px;overflow:hidden;max-height:0;transition:all .25s var(--ease);}
+    .alert.show{max-height:60px;padding:10px 12px;margin-bottom:14px;}
+    .alert-error{background:var(--danger-bg);color:var(--danger);font-weight:600;}
+    .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+    /* ============================================================
+       BOTTOM NAV (identical to other pages)
+       ============================================================ */
+    .bottom-nav{
+      position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:60;
+      will-change:transform;max-width:488px;margin:0 auto;
+      display:flex;justify-content:space-around;align-items:center;
+      background:rgba(255,255,255,0.78);backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      border-radius:30px;padding:10px 10px;
+      box-shadow:0 16px 40px rgba(27,26,34,0.18),inset 0 0 0 1px rgba(255,255,255,0.6);
+    }
+    .nav-item{
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      font-size:10.5px;font-weight:700;color:var(--muted);padding:8px 16px;border-radius:20px;
+      transition:all .22s var(--ease);border:none;background:none;cursor:pointer;
+    }
+    .nav-icon{font-size:19px;transition:transform .22s var(--ease);}
+    .nav-item.active{color:var(--red);background:var(--danger-bg);}
+    .nav-item.active .nav-icon{transform:translateY(-1px) scale(1.08);}
+    .nav-item:active{transform:scale(.92);}
+
+    #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:100;}
+
+    @media (max-width:374px){
+      .tabs{padding-left:12px;padding-right:12px;}
+      .product-card{margin-left:12px;margin-right:12px;}
+      .vip-lock{margin-left:12px;margin-right:12px;}
+    }
   </style>
 </head>
 <body data-supabase-url="YOUR_SUPABASE_URL" data-supabase-anon="YOUR_SUPABASE_ANON_KEY">
 <div class="page-wrap">
-  <div class="topbar"><span class="topbar-title">📦 Products</span><span class="vip-badge vip-0" data-vip style="font-size:11px;margin-left:auto">Member</span></div>
+  <div class="topbar"><span class="topbar-title">📦 Products</span><span class="vip-badge vip-0" data-vip style="margin-left:auto">Member</span></div>
 
-  <div class="tabs" id="tabs">
+  <div class="tabs anim anim-1" id="tabs">
     <button class="tab on" data-tab="newbie" onclick="switchTab(this,'newbie')">🌱 Newbie</button>
     <button class="tab" data-tab="vip1" onclick="switchTab(this,'vip1')">👑 VIP 1</button>
     <button class="tab" data-tab="vip2" onclick="switchTab(this,'vip2')">💎 VIP 2</button>
@@ -36,22 +215,22 @@
     <button class="tab" data-tab="vip4" onclick="switchTab(this,'vip4')">⚡ VIP 4</button>
   </div>
 
-  <div class="vip-lock" id="vipInfo" style="display:none">
+  <div class="vip-lock anim anim-2" id="vipInfo" style="display:none">
     <h3 id="vipInfoTitle">VIP 1 Required</h3>
     <p id="vipInfoDesc">Refer active users to unlock this tier.</p>
-    <a href="team.html" style="color:var(--red);font-weight:700;font-size:13px;display:inline-block;margin-top:6px">View my team →</a>
+    <a href="team.html">View my team →</a>
   </div>
 
-  <div id="productsList"><div class="loader-wrap"><div class="loader"></div></div></div>
+  <div id="productsList" class="anim anim-2"><div class="loader-wrap"><div class="loader"></div></div></div>
 </div>
 
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center">
-  <div style="background:var(--paper);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px">
-    <h3 style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:4px" id="modalTitle">Confirm Purchase</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">This product can only be purchased once.</p>
-    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:20px" id="modalDetails"></div>
+<div id="modal" style="display:none">
+  <div class="modal-sheet">
+    <h3 id="modalTitle">Confirm Purchase</h3>
+    <p class="modal-sub">This product can only be purchased once.</p>
+    <div class="modal-details" id="modalDetails"></div>
     <div id="modalAlert" class="alert"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" id="confirmBtn" onclick="confirmPurchase()">Confirm</button>
     </div>
@@ -69,6 +248,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase.js" defer></script>
 <script src="assets/js/auth.js" defer></script>
+
+<!-- ============================================================
+     ORIGINAL BUSINESS LOGIC — UNCHANGED
+     ============================================================ -->
 <script>
 (function(){
   var userId="",userVip=0,walletBal=0,userProducts=[],activeTab="newbie",pendingProductId="";
@@ -125,7 +308,7 @@
   window.openModal=function(id,name,price){
     pendingProductId=id;
     document.getElementById("modalTitle").textContent="Buy "+name;
-    document.getElementById("modalDetails").innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--muted)">Price</span><strong>'+window.AradelAuth.money(price)+'</strong></div><div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Your Balance</span><strong style="color:'+(walletBal>=price?'var(--success)':'var(--danger)')+'">'+window.AradelAuth.money(walletBal)+'</strong></div>'+(walletBal<price?'<div style="margin-top:10px;font-size:12px;color:var(--danger)">⚠️ Insufficient balance. Please deposit first.</div>':'');
+    document.getElementById("modalDetails").innerHTML='<div class="modal-row"><span>Price</span><strong>'+window.AradelAuth.money(price)+'</strong></div><div class="modal-row"><span>Your Balance</span><strong style="color:'+(walletBal>=price?'var(--success)':'var(--danger)')+'">'+window.AradelAuth.money(walletBal)+'</strong></div>'+(walletBal<price?'<div style="margin-top:10px;font-size:12px;color:var(--danger)">⚠️ Insufficient balance. Please deposit first.</div>':'');
     document.getElementById("modalAlert").className="alert";
     document.getElementById("modal").style.display="flex";
     document.getElementById("confirmBtn").disabled=walletBal<price;
@@ -141,6 +324,29 @@
     var {data:up}=await window.sb.from("user_products").select("product_id").eq("user_id",userId); userProducts=(up||[]).map(function(x){return x.product_id;});
     await loadProducts(activeTab);
   };
+})();
+</script>
+
+<!-- ============================================================
+     PRESENTATION-ONLY ENHANCEMENTS (additive, same pattern as other pages)
+     ============================================================ -->
+<script>
+(function(){
+  document.querySelectorAll(".anim").forEach(function(el,i){
+    setTimeout(function(){ el.classList.add("in"); }, 70*i);
+  });
+
+  var nav=document.querySelector(".bottom-nav");
+  if(nav && window.visualViewport){
+    var pin=function(){
+      var vv=window.visualViewport;
+      var offset=(window.innerHeight-vv.height-vv.offsetTop);
+      nav.style.transform="translateY(-"+Math.max(0,offset)+"px)";
+    };
+    window.visualViewport.addEventListener("resize",pin);
+    window.visualViewport.addEventListener("scroll",pin);
+    pin();
+  }
 })();
 </script>
 </body>
