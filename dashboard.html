@@ -325,7 +325,8 @@
        9. FLOATING BOTTOM NAVIGATION
        ============================================================ */
     .bottom-nav{
-      position:fixed;left:16px;right:16px;bottom:16px;z-index:60;
+      position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:60;
+      will-change:transform;
       max-width:488px;margin:0 auto;
       display:flex;justify-content:space-around;align-items:center;
       background:rgba(255,255,255,0.78);backdrop-filter:blur(20px) saturate(180%);
@@ -520,6 +521,22 @@
   document.querySelectorAll(".anim").forEach(function(el,i){
     setTimeout(function(){ el.classList.add("in"); }, 80*i);
   });
+
+  // Fix: Android Chrome miscalculates position:fixed against a stale
+  // viewport height when its address-bar toolbar collapses/expands,
+  // which can make backdrop-filter elements like .bottom-nav render
+  // detached from the true bottom edge. Re-pin using visualViewport.
+  var nav=document.querySelector(".bottom-nav");
+  if(nav && window.visualViewport){
+    var pin=function(){
+      var vv=window.visualViewport;
+      var offset=(window.innerHeight-vv.height-vv.offsetTop);
+      nav.style.transform="translateY(-"+Math.max(0,offset)+"px)";
+    };
+    window.visualViewport.addEventListener("resize",pin);
+    window.visualViewport.addEventListener("scroll",pin);
+    pin();
+  }
 
   // Ripple on quick actions / buttons
   document.querySelectorAll(".quick-item,.hero-btn,.promo-btn,.nav-item").forEach(function(el){
