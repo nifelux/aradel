@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aradel — Contact</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/css/styles.css"/>
+  <style>
+    .contact-card { background:var(--paper); border-radius:16px; box-shadow:var(--shadow); margin:16px; overflow:hidden; }
+    .contact-item { display:flex; align-items:center; gap:14px; padding:16px; border-bottom:1px solid var(--border); text-decoration:none; }
+    .contact-item:last-child { border-bottom:none; }
+    .ci-icon { width:44px; height:44px; border-radius:12px; background:var(--red-tint); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .ci-title { font-size:15px; font-weight:700; color:var(--ink); }
+    .ci-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="topbar"><a class="back-btn" href="profile.html">‹</a><span class="topbar-title">📞 Contact Support</span></div>
+  <div class="contact-card">
+    <a class="contact-item" href="mailto:support@aradel.com"><div class="ci-icon">✉️</div><div><div class="ci-title">Email Support</div><div class="ci-sub">support@aradel.com</div></div></a>
+    <a class="contact-item" href="tel:+2340000000000"><div class="ci-icon">📞</div><div><div class="ci-title">Call Us</div><div class="ci-sub">+234 000 000 0000</div></div></a>
+  </div>
+</div>
+</body>
+</html>
