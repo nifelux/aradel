@@ -1,0 +1,8 @@
+{
+  "name": "aradel",
+  "version": "1.0.0",
+  "description": "Aradel Investment Platform",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
