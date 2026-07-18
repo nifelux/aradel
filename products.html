@@ -209,10 +209,10 @@
 
   <div class="tabs anim anim-1" id="tabs">
     <button class="tab on" data-tab="newbie" onclick="switchTab(this,'newbie')">🌱 Newbie</button>
-    <button class="tab" data-tab="vip1" onclick="switchTab(this,'vip1')">👑 VIP 1</button>
-    <button class="tab" data-tab="vip2" onclick="switchTab(this,'vip2')">💎 VIP 2</button>
-    <button class="tab" data-tab="vip3" onclick="switchTab(this,'vip3')">🔷 VIP 3</button>
-    <button class="tab" data-tab="vip4" onclick="switchTab(this,'vip4')">⚡ VIP 4</button>
+    <button class="tab" data-tab="vip1" data-vip-tab onclick="switchTab(this,'vip1')">👑 VIP 1</button>
+    <button class="tab" data-tab="vip2" data-vip-tab onclick="switchTab(this,'vip2')">💎 VIP 2</button>
+    <button class="tab" data-tab="vip3" data-vip-tab onclick="switchTab(this,'vip3')">🔷 VIP 3</button>
+    <button class="tab" data-tab="vip4" data-vip-tab onclick="switchTab(this,'vip4')">⚡ VIP 4</button>
   </div>
 
   <div class="vip-lock anim anim-2" id="vipInfo" style="display:none">
@@ -255,6 +255,7 @@
 <script>
 (function(){
   var userId="",userVip=0,walletBal=0,userProducts=[],activeTab="newbie",pendingProductId="";
+  var vipEnabled=true; // overwritten from /api/team?action=vip-status once loaded
   function waitSb(cb){if(window.sb&&window.AradelAuth){cb();return;}var t=setInterval(function(){if(window.sb&&window.AradelAuth){clearInterval(t);cb();}},50);}
 
   waitSb(async function(){
@@ -267,10 +268,28 @@
     walletBal=w?.balance||0;
     var {data:up}=await window.sb.from("user_products").select("product_id").eq("user_id",userId);
     userProducts=(up||[]).map(function(x){return x.product_id;});
+
+    // ── Admin VIP kill switch: hide the VIP tabs, the "Member" tier
+    //    badge, and never show the VIP-locked banner when VIP is off. ──
+    try {
+      var vr=await fetch("/api/team?action=vip-status");
+      var vd=await vr.json();
+      vipEnabled = vd?.ok ? !!vd.vip_enabled : true;
+    } catch(e){ console.error("vip-status check failed:",e); }
+    applyVipVisibility();
+
     await loadProducts(activeTab);
   });
 
+  function applyVipVisibility(){
+    if(vipEnabled) return;
+    document.querySelectorAll("[data-vip-tab]").forEach(function(t){ t.style.display="none"; });
+    var badge=document.querySelector("[data-vip]");
+    if(badge) badge.style.display="none";
+  }
+
   window.switchTab=async function(btn,tab){
+    if(!vipEnabled && tab!=="newbie") return; // VIP tabs are hidden, but guard against stray calls
     document.querySelectorAll(".tab").forEach(function(b){b.classList.remove("on");});
     btn.classList.add("on"); activeTab=tab; await loadProducts(tab);
   };
@@ -280,7 +299,7 @@
     el.innerHTML='<div class="loader-wrap"><div class="loader"></div></div>'; vi.style.display="none";
     var type="newbie",vipLevel=0;
     if(tab!=="newbie"){ type="vip"; vipLevel=parseInt(tab.replace("vip","")); }
-    if(type==="vip"&&userVip<vipLevel){
+    if(vipEnabled && type==="vip"&&userVip<vipLevel){
       var reqs={1:3,2:5,3:10,4:25};
       document.getElementById("vipInfoTitle").textContent="VIP "+vipLevel+" Required";
       document.getElementById("vipInfoDesc").textContent="Refer "+reqs[vipLevel]+" active users to unlock VIP "+vipLevel+" products. You're currently VIP "+userVip+".";
