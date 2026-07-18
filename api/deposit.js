@@ -164,7 +164,7 @@ module.exports = async function handler(req, res) {
 
     return res.json({
       ok:true, reference, narration, amount:num,
-      bank_name:"OPay", account_number:"6556493720", account_name:"ARADEL LIMITED"
+      bank_name:"OPay", account_number:"6416919879", account_name:"UFUMWEN DESTINY IKPONMWOSA"
     });
   }
 
