@@ -23,6 +23,7 @@
     .prog-label { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px; }
     .status-done { background:var(--success-bg); color:var(--success); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
     .last-credit { font-size:11px; color:var(--muted); margin-top:8px; text-align:center; padding-top:8px; border-top:1px dashed var(--border); }
+    .last-credit.pending { color:var(--red); font-weight:600; }
   </style>
 </head>
 <body data-supabase-url="YOUR_SUPABASE_URL" data-supabase-anon="YOUR_SUPABASE_ANON_KEY">
@@ -65,13 +66,20 @@
     } else {
       el.innerHTML=active.map(function(p){
         var pct=p.duration_days?Math.min(100,Math.round((p.days_collected/p.duration_days)*100)):0;
-        var lastCredit = p.last_claim_date ? new Date(p.last_claim_date).toDateString() : "Not yet — starts tomorrow";
+        // Only trust last_claim_date as a real "credited" event once at
+        // least one day has actually been collected. A non-null date on
+        // its own isn't proof of a payout (e.g. it can be pre-stamped at
+        // purchase time), so days_collected is the source of truth here.
+        var credited = p.days_collected > 0 && p.last_claim_date;
+        var lastCreditHtml = credited
+          ? '🌙 Last credited: '+new Date(p.last_claim_date).toDateString()
+          : '⏳ First payout credits tonight at midnight';
         return '<div class="up-card"><div class="up-header"><div><div class="up-name">'+p.products?.name+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Started '+new Date(p.start_date).toLocaleDateString()+'</div></div></div>'+
           '<div class="up-body"><div class="up-stats"><div><div class="us-val">'+window.AradelAuth.money(p.daily_income)+'</div><div class="us-lbl">Daily</div></div>'+
           '<div><div class="us-val">'+p.days_collected+'/'+p.duration_days+'</div><div class="us-lbl">Days</div></div>'+
           '<div><div class="us-val">'+window.AradelAuth.money(p.total_earned)+'</div><div class="us-lbl">Earned</div></div></div>'+
           '<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div><div class="prog-label"><span>Progress</span><span>'+pct+'%</span></div>'+
-          '<div class="last-credit">🌙 Last credited: '+lastCredit+'</div></div></div>';
+          '<div class="last-credit'+(credited?'':' pending')+'">'+lastCreditHtml+'</div></div></div>';
       }).join("");
     }
 
