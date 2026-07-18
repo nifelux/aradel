@@ -30,6 +30,19 @@ function genRef(prefix, uid) {
   return `${prefix}${uid.replace(/-/g,"").slice(0,6).toUpperCase()}${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(2).toString("hex").toUpperCase()}`;
 }
 
+// ── Read the manual deposit bank account from site_settings, with a
+//    fallback in case the admin hasn't set it yet ──────────────────────────
+async function getManualBankDetails() {
+  const { data } = await supabase.from("site_settings").select("key,value")
+    .in("key", ["deposit_bank_name","deposit_account_number","deposit_account_name"]);
+  const map = {}; (data||[]).forEach(r => map[r.key] = r.value);
+  return {
+    bank_name:      map.deposit_bank_name      || "OPay",
+    account_number: map.deposit_account_number || "6416919879",
+    account_name:   map.deposit_account_name   || "UFUMWEN DESTINY IKPONMWOSA",
+  };
+}
+
 // ── Monnify auth — OAuth2 client-credentials, token cached in memory
 //    per invocation (serverless, so no persistent cache across calls;
 //    each cold/warm call gets a fresh token, which is fine at this volume) ──
@@ -162,9 +175,13 @@ module.exports = async function handler(req, res) {
     });
     if(error) return res.status(500).json({ error:error.message });
 
+    const bankDetails = await getManualBankDetails();
+
     return res.json({
       ok:true, reference, narration, amount:num,
-      bank_name:"OPay", account_number:"6416919879", account_name:"UFUMWEN DESTINY IKPONMWOSA"
+      bank_name: bankDetails.bank_name,
+      account_number: bankDetails.account_number,
+      account_name: bankDetails.account_name,
     });
   }
 
