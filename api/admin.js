@@ -10,9 +10,16 @@
  * GET  ?action=stats
  * GET  ?action=withdrawal-lock-status
  * GET  ?action=withdrawal-limits
+ * GET  ?action=extra-settings
  * POST ?action=set-method              { method: manual|monnify }
  * POST ?action=set-withdrawal-lock      { locked }
  * POST ?action=set-withdrawal-limits    { min, max }
+ * POST ?action=set-bank-details         { bank_name, account_number, account_name }
+ * POST ?action=set-welcome-bonus        { enabled, amount }
+ * POST ?action=set-invest-gate          { required }
+ * POST ?action=set-vip-enabled          { enabled }
+ * POST ?action=set-withdrawal-fee       { percent }
+ * POST ?action=set-referral-settings    { levels, l1, l2, l3 }
  * POST ?action=adjust-wallet            { target_user_id, amount, type, reason }
  * POST ?action=process-deposit          { deposit_id, act }
  * POST ?action=process-withdrawal       { withdrawal_id, act, note }
@@ -103,6 +110,17 @@ module.exports = async function(req, res) {
       return res.json({ ok:true, min, max });
     }
 
+    if(action==="extra-settings") {
+      const keys = ["deposit_bank_name","deposit_account_number","deposit_account_name",
+        "welcome_bonus_enabled","welcome_bonus_amount","require_invest_before_withdraw",
+        "vip_enabled","withdrawal_fee_percent","referral_levels",
+        "referral_l1_percent","referral_l2_percent","referral_l3_percent"];
+      const { data,error } = await supabase.from("site_settings").select("key,value").in("key",keys);
+      if(error) return res.status(500).json({ error:error.message });
+      const map={}; (data||[]).forEach(function(r){ map[r.key]=r.value; });
+      return res.json({ ok:true, settings:map });
+    }
+
     if(action==="stats") {
       const [d,w,u,p] = await Promise.all([
         supabase.from("deposits").select("id",{count:"exact",head:true}).eq("status","pending"),
@@ -145,6 +163,71 @@ module.exports = async function(req, res) {
       { key:"max_withdraw", value:String(maxNum), updated_at:new Date().toISOString() },
     ]);
     return res.json({ ok:true, min:minNum, max:maxNum });
+  }
+
+  if(action==="set-bank-details") {
+    const { bank_name, account_number, account_name } = req.body;
+    if(!bank_name||!account_number||!account_name) return res.status(400).json({ error:"bank_name, account_number, and account_name required" });
+    const now=new Date().toISOString();
+    const { error } = await supabase.from("site_settings").upsert([
+      { key:"deposit_bank_name",      value:String(bank_name).trim(),      updated_at:now },
+      { key:"deposit_account_number", value:String(account_number).trim(), updated_at:now },
+      { key:"deposit_account_name",   value:String(account_name).trim(),   updated_at:now },
+    ]);
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-welcome-bonus") {
+    const { enabled, amount } = req.body;
+    const num = Number(amount||0);
+    if(isNaN(num)||num<0) return res.status(400).json({ error:"Invalid amount" });
+    const now=new Date().toISOString();
+    const { error } = await supabase.from("site_settings").upsert([
+      { key:"welcome_bonus_enabled", value: enabled?"true":"false", updated_at:now },
+      { key:"welcome_bonus_amount",  value:String(num),             updated_at:now },
+    ]);
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-invest-gate") {
+    const { required } = req.body;
+    const { error } = await supabase.from("site_settings").upsert({ key:"require_invest_before_withdraw", value: required?"true":"false", updated_at:new Date().toISOString() });
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-vip-enabled") {
+    const { enabled } = req.body;
+    const { error } = await supabase.from("site_settings").upsert({ key:"vip_enabled", value: enabled?"true":"false", updated_at:new Date().toISOString() });
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-withdrawal-fee") {
+    const { percent } = req.body;
+    const num = Number(percent);
+    if(isNaN(num)||num<0||num>100) return res.status(400).json({ error:"Percent must be between 0 and 100" });
+    const { error } = await supabase.from("site_settings").upsert({ key:"withdrawal_fee_percent", value:String(num), updated_at:new Date().toISOString() });
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-referral-settings") {
+    const { levels, l1, l2, l3 } = req.body;
+    const lv=Number(levels), p1=Number(l1), p2=Number(l2), p3=Number(l3);
+    if(![1,3].includes(lv)) return res.status(400).json({ error:"levels must be 1 or 3" });
+    if([p1,p2,p3].some(function(n){ return isNaN(n)||n<0||n>100; })) return res.status(400).json({ error:"Percentages must be between 0 and 100" });
+    const now=new Date().toISOString();
+    const { error } = await supabase.from("site_settings").upsert([
+      { key:"referral_levels",     value:String(lv), updated_at:now },
+      { key:"referral_l1_percent", value:String(p1), updated_at:now },
+      { key:"referral_l2_percent", value:String(p2), updated_at:now },
+      { key:"referral_l3_percent", value:String(p3), updated_at:now },
+    ]);
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
   }
 
   if(action==="adjust-wallet") {
@@ -284,3 +367,4 @@ module.exports = async function(req, res) {
 
   return res.status(400).json({ error:"Unknown action: "+action });
 };
+        
