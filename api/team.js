@@ -17,6 +17,18 @@ module.exports = async function handler(req, res) {
   if(!user_id) return res.status(400).json({ error:"user_id required" });
 
   try {
+    // ── Admin-configurable settings: referral depth, % rates, VIP kill switch ──
+    const settingKeys = ["referral_levels","referral_l1_percent","referral_l2_percent","referral_l3_percent","vip_enabled"];
+    const { data:settingsRows } = await supabase.from("site_settings").select("key,value").in("key",settingKeys);
+    const settingsMap = {};
+    (settingsRows||[]).forEach(function(r){ settingsMap[r.key]=r.value; });
+
+    const referralLevels = Number(settingsMap.referral_levels || 3); // 1 or 3
+    const l1Percent = Number(settingsMap.referral_l1_percent ?? 20);
+    const l2Percent = Number(settingsMap.referral_l2_percent ?? 3);
+    const l3Percent = Number(settingsMap.referral_l3_percent ?? 2);
+    const vipEnabled = (settingsMap.vip_enabled ?? "true") === "true";
+
     const { data:l1 } = await supabase.from("profiles").select("id,full_name,email,created_at").eq("referred_by",user_id).order("created_at",{ascending:false});
     const l1List = l1||[];
     const l1Ids = l1List.map(m=>m.id);
@@ -28,15 +40,16 @@ module.exports = async function handler(req, res) {
     }
     const l1WithStatus = l1List.map(m=>({...m, isActive:activeSet.has(m.id)}));
 
+    // Only walk levels 2/3 when the admin has referral depth set to 3.
     let l2List = [];
-    if(l1Ids.length) {
+    if(referralLevels >= 2 && l1Ids.length) {
       const { data:l2 } = await supabase.from("profiles").select("id,full_name,email,created_at,referred_by").in("referred_by",l1Ids).order("created_at",{ascending:false});
       l2List = l2||[];
     }
 
     let l3List = [];
     const l2Ids = l2List.map(m=>m.id);
-    if(l2Ids.length) {
+    if(referralLevels >= 3 && l2Ids.length) {
       const { data:l3 } = await supabase.from("profiles").select("id,full_name,email,created_at").in("referred_by",l2Ids).order("created_at",{ascending:false});
       l3List = l3||[];
     }
@@ -67,6 +80,15 @@ module.exports = async function handler(req, res) {
       earned: totalEarned,
       total_team_deposits: l1Deposits+l2Deposits+l3Deposits,
       l1_deposits: l1Deposits, l2_deposits: l2Deposits, l3_deposits: l3Deposits,
+      // Front-end uses these to render the correct number of level tabs,
+      // the correct percentages, and to show/hide the VIP progress card.
+      settings: {
+        referral_levels: referralLevels,
+        referral_l1_percent: l1Percent,
+        referral_l2_percent: l2Percent,
+        referral_l3_percent: l3Percent,
+        vip_enabled: vipEnabled,
+      },
     });
   } catch(e) {
     console.error("[team]", e);
