@@ -37,26 +37,34 @@ module.exports = async function(req, res) {
 
   if(req.method!=="POST") return res.status(405).json({ error:"Method not allowed" });
 
-  const { data:lockSetting } = await supabase.from("site_settings").select("value").eq("key","withdrawals_locked").single();
-  if(lockSetting?.value === "true") return res.json({ ok:false, error:"Withdrawals are temporarily paused. Please check back later." });
-
   const { amount, bank_name, account_number, account_name } = req.body;
   if(!amount||!bank_name||!account_number||!account_name) return res.status(400).json({ error:"All fields required" });
   const num = Number(amount);
+  if(isNaN(num) || num <= 0) return res.status(400).json({ error:"Invalid amount" });
 
-  const { data:limitSettings } = await supabase.from("site_settings").select("key,value").in("key",["min_withdraw","max_withdraw"]);
-  const minW = Number(limitSettings?.find(s=>s.key==="min_withdraw")?.value || 1000);
-  const maxW = Number(limitSettings?.find(s=>s.key==="max_withdraw")?.value || 0);
-  if(num < minW) return res.json({ ok:false, error:`Minimum withdrawal is ₦${minW.toLocaleString()}` });
-  if(maxW > 0 && num > maxW) return res.json({ ok:false, error:`Maximum withdrawal is ₦${maxW.toLocaleString()}` });
+  // All gating (lock, min/max, invest-required, fee %) now lives in one
+  // place — the request_withdrawal() Postgres function — so the admin
+  // toggles actually take effect and there's no read-then-write race
+  // on the wallet balance.
+  const { data, error } = await supabase.rpc("request_withdrawal", {
+    p_user_id: user_id,
+    p_amount: num,
+    p_bank_name: bank_name,
+    p_account_number: account_number,
+    p_account_name: account_name,
+  });
 
-  const { data:w } = await supabase.from("wallets").select("balance").eq("user_id",user_id).single();
-  if(!w || w.balance < num) return res.json({ ok:false, error:"Insufficient balance" });
-
-  await supabase.from("wallets").update({ balance:w.balance-num, total_withdrawn:(w.total_withdrawn||0)+num, updated_at:new Date().toISOString() }).eq("user_id",user_id);
-  await supabase.from("wallet_transactions").insert({ user_id, type:"withdrawal", amount:-num, description:"Withdrawal request" });
-  const { error } = await supabase.from("withdrawals").insert({ user_id, amount:num, bank_name, account_number, account_name, status:"pending" });
   if(error) return res.status(500).json({ error:error.message });
-  return res.json({ ok:true });
+  if(!data?.ok) {
+    const messages = {
+      withdrawals_locked:   "Withdrawals are temporarily paused. Please check back later.",
+      below_minimum:        `Minimum withdrawal is ₦${Number(data.min||0).toLocaleString()}`,
+      above_maximum:        `Maximum withdrawal is ₦${Number(data.max||0).toLocaleString()}`,
+      investment_required:  "You need an active investment before you can withdraw.",
+      insufficient_balance: "Insufficient balance",
+    };
+    return res.json({ ok:false, error: messages[data?.error] || data?.error || "Withdrawal failed" });
+  }
+
+  return res.json({ ok:true, amount:data.amount, fee:data.fee, net:data.net });
 };
-                                              
