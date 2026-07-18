@@ -126,6 +126,7 @@
     .dc-amount{font-family:'Fraunces',serif;font-size:28px;font-weight:700;margin-top:5px;position:relative;z-index:1;}
     .dc-sub{font-size:12px;opacity:.85;margin-top:5px;position:relative;z-index:1;}
     .dc-breakdown{display:grid;grid-template-columns:repeat(3,1fr);}
+    .dc-breakdown.levels-1{grid-template-columns:repeat(1,1fr);}
     .dc-item{padding:14px 8px;text-align:center;border-right:1px solid var(--border);}
     .dc-item:last-child{border-right:none;}
     .dc-item-val{font-family:'Fraunces',serif;font-size:14.5px;font-weight:700;color:var(--red);}
@@ -213,7 +214,7 @@
     <div class="share-row"><button class="copy-btn" onclick="shareLink()">📤 Share Link</button></div>
   </div>
 
-  <div class="vip-progress anim anim-2">
+  <div class="vip-progress anim anim-2" id="vipProgressCard" style="display:none">
     <div class="vip-prog-title">VIP Level Progress <span id="activeRefs" style="color:var(--muted);font-weight:400;font-size:12px"></span></div>
     <div class="vip-tiers">
       <div class="vip-tier" id="vt1"><div class="vt-icon">🥉</div><div class="vt-label">VIP 1</div><div class="vt-req">3 refs</div></div>
@@ -232,18 +233,18 @@
   </div>
 
   <div class="deposits-card anim anim-3">
-    <div class="dc-header"><div class="dc-label">Total Team Deposits</div><div class="dc-amount" id="teamDepositsTotal">₦0</div><div class="dc-sub">Combined deposits from your entire downline</div></div>
-    <div class="dc-breakdown">
+    <div class="dc-header"><div class="dc-label">Total Team Deposits</div><div class="dc-amount" id="teamDepositsTotal">₦0</div><div class="dc-sub" id="dcSub">Combined deposits from your entire downline</div></div>
+    <div class="dc-breakdown" id="dcBreakdown">
       <div class="dc-item"><div class="dc-item-val" id="l1Deposits">₦0</div><div class="dc-item-lbl">Level 1</div></div>
-      <div class="dc-item"><div class="dc-item-val" id="l2Deposits">₦0</div><div class="dc-item-lbl">Level 2</div></div>
-      <div class="dc-item"><div class="dc-item-val" id="l3Deposits">₦0</div><div class="dc-item-lbl">Level 3</div></div>
+      <div class="dc-item" id="l2DepositsItem"><div class="dc-item-val" id="l2Deposits">₦0</div><div class="dc-item-lbl">Level 2</div></div>
+      <div class="dc-item" id="l3DepositsItem"><div class="dc-item-val" id="l3Deposits">₦0</div><div class="dc-item-lbl">Level 3</div></div>
     </div>
   </div>
 
-  <div class="level-tabs anim anim-4">
-    <button class="ltab on" onclick="switchLevel(this,1)">Level 1 (20%)</button>
-    <button class="ltab" onclick="switchLevel(this,2)">Level 2 (3%)</button>
-    <button class="ltab" onclick="switchLevel(this,3)">Level 3 (2%)</button>
+  <div class="level-tabs anim anim-4" id="levelTabs">
+    <button class="ltab on" onclick="switchLevel(this,1)" id="ltab1">Level 1</button>
+    <button class="ltab" onclick="switchLevel(this,2)" id="ltab2">Level 2</button>
+    <button class="ltab" onclick="switchLevel(this,3)" id="ltab3">Level 3</button>
   </div>
   <div id="membersList" class="anim anim-4"><div class="loader-wrap"><div class="loader"></div></div></div>
 </div>
@@ -266,6 +267,7 @@
 <script>
 (function(){
   var userId="",refCode="",activeLevel=1,l1Members=[],l2Members=[],l3Members=[];
+  var referralLevels=3, vipEnabled=true; // overwritten from /api/team settings once loaded
   function waitSb(cb){if(window.sb&&window.AradelAuth){cb();return;}var t=setInterval(function(){if(window.sb&&window.AradelAuth){clearInterval(t);cb();}},50);}
 
   waitSb(async function(){
@@ -282,6 +284,13 @@
       if(!d.ok) throw new Error(d.error||"Failed to load team");
       l1Members=d.l1||[]; l2Members=d.l2||[]; l3Members=d.l3||[];
       var activeCount=d.active_count||0, totalTeam=d.total_team||0;
+
+      // ── Apply admin-controlled settings (referral depth + VIP toggle) ──
+      var settings=d.settings||{};
+      referralLevels=settings.referral_levels||3;
+      vipEnabled=settings.vip_enabled!==false;
+      applySettingsToUI(settings);
+
       document.getElementById("totalTeam").textContent=totalTeam;
       document.getElementById("activeTeam").textContent=activeCount;
       document.getElementById("activeRefs").textContent="("+activeCount+" active investors)";
@@ -292,12 +301,14 @@
       document.getElementById("l2Deposits").textContent="₦"+(d.l2_deposits||0).toLocaleString();
       document.getElementById("l3Deposits").textContent="₦"+(d.l3_deposits||0).toLocaleString();
 
-      var thresholds={1:3,2:5,3:10,4:25};
-      [1,2,3,4].forEach(function(n){
-        var el=document.getElementById("vt"+n);
-        if(activeCount>=thresholds[n]){ el.classList.add("unlocked"); el.querySelector(".vt-req").textContent="✅ Unlocked"; }
-        else { el.querySelector(".vt-req").textContent=activeCount+"/"+thresholds[n]+" refs"; }
-      });
+      if(vipEnabled){
+        var thresholds={1:3,2:5,3:10,4:25};
+        [1,2,3,4].forEach(function(n){
+          var el=document.getElementById("vt"+n);
+          if(activeCount>=thresholds[n]){ el.classList.add("unlocked"); el.querySelector(".vt-req").textContent="✅ Unlocked"; }
+          else { el.querySelector(".vt-req").textContent=activeCount+"/"+thresholds[n]+" refs"; }
+        });
+      }
       renderLevel(1);
     } catch(e){
       console.error("Team load error:",e);
@@ -306,7 +317,39 @@
     }
   });
 
+  // Shows/hides the VIP card and Level 2/3 UI to match what the admin
+  // has configured in site_settings (vip_enabled, referral_levels).
+  function applySettingsToUI(settings){
+    document.getElementById("vipProgressCard").style.display = vipEnabled ? "" : "none";
+
+    var l1Pct = settings.referral_l1_percent!=null ? settings.referral_l1_percent : 20;
+    var l2Pct = settings.referral_l2_percent!=null ? settings.referral_l2_percent : 3;
+    var l3Pct = settings.referral_l3_percent!=null ? settings.referral_l3_percent : 2;
+    document.getElementById("ltab1").textContent = "Level 1 ("+l1Pct+"%)";
+
+    if(referralLevels < 3){
+      document.getElementById("ltab3").style.display="none";
+      document.getElementById("l3DepositsItem").style.display="none";
+    } else {
+      document.getElementById("ltab3").style.display="";
+      document.getElementById("l3DepositsItem").style.display="";
+      document.getElementById("ltab3").textContent = "Level 3 ("+l3Pct+"%)";
+    }
+    if(referralLevels < 2){
+      document.getElementById("ltab2").style.display="none";
+      document.getElementById("l2DepositsItem").style.display="none";
+      document.getElementById("dcSub").textContent="Deposits from your direct referrals";
+    } else {
+      document.getElementById("ltab2").style.display="";
+      document.getElementById("l2DepositsItem").style.display="";
+      document.getElementById("ltab2").textContent = "Level 2 ("+l2Pct+"%)";
+      document.getElementById("dcSub").textContent="Combined deposits from your entire downline";
+    }
+    if(referralLevels<3) document.getElementById("dcBreakdown").classList.add(referralLevels<2?"levels-1":"");
+  }
+
   window.switchLevel=function(btn,level){
+    if(level>referralLevels) return; // level tab hidden/disabled per admin settings
     document.querySelectorAll(".ltab").forEach(function(b){b.classList.remove("on");});
     btn.classList.add("on"); activeLevel=level; renderLevel(level);
   };
