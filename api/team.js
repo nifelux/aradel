@@ -1,6 +1,9 @@
 /**
  * /api/team.js
  * GET ?user_id=UUID
+ * GET ?action=vip-status   (public — no user_id required; used by products.html
+ *                            and any other page that just needs to know whether
+ *                            the admin has VIP turned on, without full team data)
  * Server-side (service-role) because RLS blocks users from seeing
  * other users' profile rows directly from the browser.
  */
@@ -12,6 +15,11 @@ module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods","GET,OPTIONS");
   if(req.method==="OPTIONS") return res.status(200).end();
   if(req.method!=="GET") return res.status(405).json({ error:"Method not allowed" });
+
+  if(req.query.action==="vip-status") {
+    const { data } = await supabase.from("site_settings").select("value").eq("key","vip_enabled").single();
+    return res.json({ ok:true, vip_enabled: (data?.value ?? "true") === "true" });
+  }
 
   const { user_id } = req.query;
   if(!user_id) return res.status(400).json({ error:"user_id required" });
