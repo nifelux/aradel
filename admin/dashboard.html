@@ -210,15 +210,69 @@
         </div>
         <button onclick="saveWithdrawalLimits()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save Limits</button>
         <div id="limitsAlert" class="alert" style="margin-top:10px"></div>
+        <div style="height:1px;background:#3A2E29;margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div><div style="font-size:14px;font-weight:700;color:#fff">Require an active investment to withdraw</div><div style="font-size:12px;color:#8A7F78;margin-top:2px" id="investGateDesc">Loading…</div></div>
+          <button id="investGateToggle" onclick="toggleInvestGate()" style="flex-shrink:0;width:52px;height:30px;border-radius:20px;border:none;cursor:pointer;position:relative;background:#3A2E29"><span id="investGateKnob" style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s"></span></button>
+        </div>
+        <div style="height:1px;background:#3A2E29;margin:16px 0"></div>
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">Withdrawal Fee</div>
+        <div class="a-field"><label class="a-label">Fee (% of amount withdrawn)</label><input id="withdrawFeeInput" class="a-input" type="number" min="0" max="100" step="0.1"/></div>
+        <button onclick="saveWithdrawalFee()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save Fee</button>
+        <div id="feeAlert" class="alert" style="margin-top:10px"></div>
       </div>
     </div>
 
     <div class="a-card" style="margin-bottom:14px">
       <div class="a-card-title">Manual Account Details</div>
-      <div style="padding:14px;font-size:14px;line-height:2;color:#B8ADA5">
-        <div>Bank: <strong style="color:#fff">OPay</strong></div>
-        <div>Account: <strong style="color:#fff">6556493720</strong></div>
-        <div>Name: <strong style="color:#fff">ARADEL LIMITED</strong></div>
+      <div style="padding:14px">
+        <div class="a-field"><label class="a-label">Bank Name</label><input class="a-input" id="bankNameInput" placeholder="OPay"/></div>
+        <div class="a-field"><label class="a-label">Account Number</label><input class="a-input" id="bankAcctInput" placeholder="6556493720"/></div>
+        <div class="a-field"><label class="a-label">Account Name</label><input class="a-input" id="bankNameOnAcctInput" placeholder="ARADEL LIMITED"/></div>
+        <button onclick="saveBankDetails()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save Bank Details</button>
+        <div id="bankAlert" class="alert" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="a-card" style="margin-bottom:14px">
+      <div class="a-card-title">Welcome Bonus</div>
+      <div style="padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <div><div style="font-size:14px;font-weight:700;color:#fff">Give new users a signup bonus</div><div style="font-size:12px;color:#8A7F78;margin-top:2px" id="welcomeBonusDesc">Loading…</div></div>
+          <button id="welcomeBonusToggle" onclick="toggleWelcomeBonus()" style="flex-shrink:0;width:52px;height:30px;border-radius:20px;border:none;cursor:pointer;position:relative;background:#3A2E29"><span id="welcomeBonusKnob" style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s"></span></button>
+        </div>
+        <div class="a-field"><label class="a-label">Bonus Amount (₦)</label><input class="a-input" id="welcomeBonusAmountInput" type="number" min="0"/></div>
+        <button onclick="saveWelcomeBonus()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save</button>
+        <div id="welcomeAlert" class="alert" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="a-card" style="margin-bottom:14px">
+      <div class="a-card-title">VIP Products</div>
+      <div style="padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div><div style="font-size:14px;font-weight:700;color:#fff">VIP products enabled</div><div style="font-size:12px;color:#8A7F78;margin-top:2px" id="vipEnabledDesc">Loading…</div></div>
+          <button id="vipEnabledToggle" onclick="toggleVipEnabled()" style="flex-shrink:0;width:52px;height:30px;border-radius:20px;border:none;cursor:pointer;position:relative;background:#3A2E29"><span id="vipEnabledKnob" style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s"></span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="a-card" style="margin-bottom:14px">
+      <div class="a-card-title">Referral Program</div>
+      <div style="padding:14px">
+        <div class="a-field"><label class="a-label">Referral Depth</label>
+          <select class="a-select" id="referralLevelsInput">
+            <option value="1">1 Level</option>
+            <option value="3">3 Levels</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="a-field"><label class="a-label">L1 %</label><input class="a-input" id="refL1Input" type="number" min="0" max="100" step="0.1"/></div>
+          <div class="a-field"><label class="a-label">L2 %</label><input class="a-input" id="refL2Input" type="number" min="0" max="100" step="0.1"/></div>
+          <div class="a-field"><label class="a-label">L3 %</label><input class="a-input" id="refL3Input" type="number" min="0" max="100" step="0.1"/></div>
+        </div>
+        <button onclick="saveReferralSettings()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save Referral Settings</button>
+        <div id="referralAlert" class="alert" style="margin-top:10px"></div>
       </div>
     </div>
 
@@ -256,6 +310,7 @@
     await loadMethod();
     await loadWithdrawalLock();
     await loadWithdrawalLimits();
+    await loadExtraSettings();
   });
 
   window.showPage=function(id,btn){
@@ -604,6 +659,110 @@
     var d=await r.json();
     if(d.ok){ window.AradelAuth.toast("✅ Withdrawal limits updated!"); al.className="alert"; }
     else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; }
+  };
+
+  var extraSettings={};
+  async function loadExtraSettings(){
+    var r=await fetch("/api/admin?action=extra-settings&admin_id="+adminId);
+    var d=await r.json();
+    if(!d.ok) return;
+    extraSettings=d.settings||{};
+
+    document.getElementById("bankNameInput").value=extraSettings.deposit_bank_name||"";
+    document.getElementById("bankAcctInput").value=extraSettings.deposit_account_number||"";
+    document.getElementById("bankNameOnAcctInput").value=extraSettings.deposit_account_name||"";
+
+    welcomeBonusOn = extraSettings.welcome_bonus_enabled==="true";
+    document.getElementById("welcomeBonusAmountInput").value=extraSettings.welcome_bonus_amount||"0";
+    applyWelcomeBonusUI();
+
+    investGateOn = extraSettings.require_invest_before_withdraw==="true";
+    applyInvestGateUI();
+
+    vipEnabledOn = extraSettings.vip_enabled!=="false";
+    applyVipEnabledUI();
+
+    document.getElementById("withdrawFeeInput").value=extraSettings.withdrawal_fee_percent||"0";
+
+    document.getElementById("referralLevelsInput").value=extraSettings.referral_levels||"3";
+    document.getElementById("refL1Input").value=extraSettings.referral_l1_percent||"20";
+    document.getElementById("refL2Input").value=extraSettings.referral_l2_percent||"3";
+    document.getElementById("refL3Input").value=extraSettings.referral_l3_percent||"2";
+  }
+
+  window.saveBankDetails=async function(){
+    var bank_name=document.getElementById("bankNameInput").value.trim();
+    var account_number=document.getElementById("bankAcctInput").value.trim();
+    var account_name=document.getElementById("bankNameOnAcctInput").value.trim();
+    var al=document.getElementById("bankAlert"); al.className="alert";
+    if(!bank_name||!account_number||!account_name){ al.textContent="Fill in all three fields"; al.className="alert alert-error show"; return; }
+    var r=await fetch("/api/admin?action=set-bank-details",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({bank_name,account_number,account_name,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ window.AradelAuth.toast("✅ Bank details updated"); } else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; }
+  };
+
+  var welcomeBonusOn=false;
+  function applyWelcomeBonusUI(){
+    var toggle=document.getElementById("welcomeBonusToggle"),knob=document.getElementById("welcomeBonusKnob"),desc=document.getElementById("welcomeBonusDesc");
+    if(welcomeBonusOn){ toggle.style.background="#00c853"; knob.style.transform="translateX(22px)"; desc.textContent="✅ On — new users get a bonus automatically"; desc.style.color="#34D399"; }
+    else { toggle.style.background="#3A2E29"; knob.style.transform="translateX(0)"; desc.textContent="Off — no signup bonus"; desc.style.color="#8A7F78"; }
+  }
+  window.toggleWelcomeBonus=function(){ welcomeBonusOn=!welcomeBonusOn; applyWelcomeBonusUI(); };
+  window.saveWelcomeBonus=async function(){
+    var amount=document.getElementById("welcomeBonusAmountInput").value;
+    var al=document.getElementById("welcomeAlert"); al.className="alert";
+    var r=await fetch("/api/admin?action=set-welcome-bonus",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:welcomeBonusOn,amount,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ window.AradelAuth.toast("✅ Welcome bonus updated"); } else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; }
+  };
+
+  var investGateOn=false;
+  function applyInvestGateUI(){
+    var toggle=document.getElementById("investGateToggle"),knob=document.getElementById("investGateKnob"),desc=document.getElementById("investGateDesc");
+    if(investGateOn){ toggle.style.background="#00c853"; knob.style.transform="translateX(22px)"; desc.textContent="✅ On — users must own an active product to withdraw"; desc.style.color="#34D399"; }
+    else { toggle.style.background="#3A2E29"; knob.style.transform="translateX(0)"; desc.textContent="Off — anyone with balance can withdraw"; desc.style.color="#8A7F78"; }
+  }
+  window.toggleInvestGate=async function(){
+    var newState=!investGateOn;
+    document.getElementById("investGateDesc").textContent="Updating…";
+    var r=await fetch("/api/admin?action=set-invest-gate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({required:newState,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ investGateOn=newState; applyInvestGateUI(); window.AradelAuth.toast(investGateOn?"🔒 Investment now required to withdraw":"✅ Requirement removed"); }
+    else { window.AradelAuth.toast("❌ "+d.error); applyInvestGateUI(); }
+  };
+
+  var vipEnabledOn=true;
+  function applyVipEnabledUI(){
+    var toggle=document.getElementById("vipEnabledToggle"),knob=document.getElementById("vipEnabledKnob"),desc=document.getElementById("vipEnabledDesc");
+    if(vipEnabledOn){ toggle.style.background="#00c853"; knob.style.transform="translateX(22px)"; desc.textContent="✅ On — users can purchase VIP products"; desc.style.color="#34D399"; }
+    else { toggle.style.background="#3A2E29"; knob.style.transform="translateX(0)"; desc.textContent="Off — VIP purchases are blocked"; desc.style.color="#8A7F78"; }
+  }
+  window.toggleVipEnabled=async function(){
+    var newState=!vipEnabledOn;
+    document.getElementById("vipEnabledDesc").textContent="Updating…";
+    var r=await fetch("/api/admin?action=set-vip-enabled",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:newState,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ vipEnabledOn=newState; applyVipEnabledUI(); window.AradelAuth.toast(vipEnabledOn?"✅ VIP products enabled":"🚫 VIP products disabled"); }
+    else { window.AradelAuth.toast("❌ "+d.error); applyVipEnabledUI(); }
+  };
+
+  window.saveWithdrawalFee=async function(){
+    var percent=document.getElementById("withdrawFeeInput").value;
+    var al=document.getElementById("feeAlert"); al.className="alert";
+    var r=await fetch("/api/admin?action=set-withdrawal-fee",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({percent,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ window.AradelAuth.toast("✅ Withdrawal fee updated"); } else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; }
+  };
+
+  window.saveReferralSettings=async function(){
+    var levels=document.getElementById("referralLevelsInput").value;
+    var l1=document.getElementById("refL1Input").value;
+    var l2=document.getElementById("refL2Input").value;
+    var l3=document.getElementById("refL3Input").value;
+    var al=document.getElementById("referralAlert"); al.className="alert";
+    var r=await fetch("/api/admin?action=set-referral-settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({levels,l1,l2,l3,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ window.AradelAuth.toast("✅ Referral settings updated"); } else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; }
   };
 
   window.grantAdmin=async function(){
