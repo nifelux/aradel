@@ -447,9 +447,25 @@
     var el=document.getElementById("userList");
     if(!users.length){ el.innerHTML='<div style="text-align:center;color:#8A7F78;padding:24px;font-size:14px">No users found.</div>'; return; }
     el.innerHTML=users.map(function(u){
-      return '<div class="user-row" onclick="openWalletModal(\''+u.id+'\')"><div class="user-avatar">'+(u.full_name||u.email||"?")[0].toUpperCase()+'</div><div style="flex:1"><div class="user-name">'+(u.full_name||"—")+(u.is_admin?' <span style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;padding:2px 6px;border-radius:4px">Admin</span>':'')+' <span style="font-size:10px;color:#34D399">VIP '+u.vip_level+'</span></div><div class="user-meta">'+u.email+' · '+new Date(u.created_at).toLocaleDateString()+'</div></div><div style="text-align:right"><div class="user-bal">₦'+Number(u.wallets?.balance||0).toLocaleString()+'</div><div style="font-size:10px;color:#8A7F78;margin-top:2px">✏️ Tap to edit</div></div></div>';
+      var banned=u.is_active===false;
+      var banBtn = u.is_admin
+        ? '<span style="margin-top:6px;display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.06);color:#8A7F78;font-size:10px;font-weight:700">Admin</span>'
+        : '<button onclick="event.stopPropagation();toggleUserBan(\''+u.id+'\','+(!banned)+')" style="margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:'+(banned?'rgba(52,211,153,.12)':'rgba(239,68,68,.12)')+';color:'+(banned?'#34D399':'#f87171')+';font-size:10px;font-weight:700;cursor:pointer">'+(banned?'✅ Unban':'🚫 Ban')+'</button>';
+      return '<div class="user-row" onclick="openWalletModal(\''+u.id+'\')" style="'+(banned?'opacity:.55':'')+'"><div class="user-avatar">'+(u.full_name||u.email||"?")[0].toUpperCase()+'</div><div style="flex:1"><div class="user-name">'+(u.full_name||"—")+(u.is_admin?' <span style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;padding:2px 6px;border-radius:4px">Admin</span>':'')+(banned?' <span style="font-size:10px;background:rgba(239,68,68,.3);color:#fff;padding:2px 6px;border-radius:4px">🚫 Banned</span>':'')+' <span style="font-size:10px;color:#34D399">VIP '+u.vip_level+'</span></div><div class="user-meta">'+u.email+' · '+new Date(u.created_at).toLocaleDateString()+'</div></div><div style="text-align:right"><div class="user-bal">₦'+Number(u.wallets?.balance||0).toLocaleString()+'</div>'+banBtn+'</div></div>';
     }).join("");
   }
+  window.toggleUserBan=async function(userId,willBan){
+    var u=allUsers.find(function(x){return x.id===userId;});
+    var name=u?(u.full_name||u.email||"this user"):"this user";
+    var msg=willBan
+      ? "Ban "+name+"? They'll be signed out and blocked from logging in until unbanned."
+      : "Unban "+name+"? They'll regain access immediately.";
+    if(!confirm(msg)) return;
+    var r=await fetch("/api/admin?action="+(willBan?"ban-user":"unban-user"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({target_user_id:userId,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ window.AradelAuth.toast(willBan?"🚫 User banned":"✅ User unbanned"); loadUsers(); }
+    else { window.AradelAuth.toast(d.error==="cannot_ban_admin"?"Can't ban an admin account":d.error==="cannot_ban_self"?"You can't ban yourself":(d.error||"Error")); }
+  };
   window.filterUsers=function(q){
     if(!q){ renderUsers(allUsers); return; }
     var f=q.toLowerCase();
