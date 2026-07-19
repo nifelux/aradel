@@ -30,6 +30,8 @@
  * POST ?action=delete-product           { product_id }
  * POST ?action=toggle-product           { product_id, status }
  * POST ?action=set-admin                { target_user_id, is_admin }
+ * POST ?action=ban-user                 { target_user_id }
+ * POST ?action=unban-user               { target_user_id }
  * POST ?action=create-gift-code
  * POST ?action=toggle-gift-code
  * POST ?action=delete-gift-code
@@ -339,6 +341,25 @@ module.exports = async function(req, res) {
     return res.json({ ok:true });
   }
 
+  if(action==="ban-user") {
+    const { target_user_id } = req.body;
+    if(!target_user_id) return res.status(400).json({ error:"target_user_id required" });
+    if(target_user_id === admin_id) return res.status(400).json({ error:"cannot_ban_self" });
+    const { data:target } = await supabase.from("profiles").select("is_admin").eq("id",target_user_id).single();
+    if(target?.is_admin) return res.status(400).json({ error:"cannot_ban_admin" });
+    const { error } = await supabase.from("profiles").update({ is_active:false, updated_at:new Date().toISOString() }).eq("id",target_user_id);
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="unban-user") {
+    const { target_user_id } = req.body;
+    if(!target_user_id) return res.status(400).json({ error:"target_user_id required" });
+    const { error } = await supabase.from("profiles").update({ is_active:true, updated_at:new Date().toISOString() }).eq("id",target_user_id);
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
   if(action==="create-gift-code") {
     const { code, amount, max_uses, expires_at } = req.body;
     if(!code||!amount) return res.status(400).json({ error:"code and amount required" });
@@ -367,4 +388,3 @@ module.exports = async function(req, res) {
 
   return res.status(400).json({ error:"Unknown action: "+action });
 };
-        
