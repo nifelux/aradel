@@ -4,6 +4,7 @@
  * GET  ?action=deposits&status=&admin_id=
  * GET  ?action=withdrawals&status=
  * GET  ?action=users
+ * GET  ?action=user-team&target_user_id=
  * GET  ?action=products
  * GET  ?action=messages
  * GET  ?action=gift-codes
@@ -80,6 +81,62 @@ module.exports = async function(req, res) {
       const { data,error } = await supabase.from("profiles").select("*,wallets(balance)").order("created_at",{ascending:false}).limit(200);
       if(error) return res.status(500).json({ error:error.message });
       return res.json({ ok:true, users:data||[] });
+    }
+
+    if(action==="user-team") {
+      const { target_user_id } = req.query;
+      if(!target_user_id) return res.status(400).json({ error:"target_user_id required" });
+
+      const { data:l1 } = await supabase.from("profiles").select("id,full_name,email,created_at").eq("referred_by",target_user_id).order("created_at",{ascending:false});
+      const l1List = l1||[];
+      const l1Ids = l1List.map(m=>m.id);
+
+      let activeSet = new Set();
+      if(l1Ids.length) {
+        const { data:invested } = await supabase.from("user_products").select("user_id").in("user_id",l1Ids);
+        (invested||[]).forEach(r=>activeSet.add(r.user_id));
+      }
+      const l1WithStatus = l1List.map(m=>({...m, isActive:activeSet.has(m.id)}));
+
+      // Admin view always walks the full 3-level downline for audit purposes,
+      // regardless of the referral_levels commission setting — that setting
+      // only controls what gets *paid*, not who's actually in the tree.
+      let l2List = [];
+      if(l1Ids.length) {
+        const { data:l2 } = await supabase.from("profiles").select("id,full_name,email,created_at,referred_by").in("referred_by",l1Ids).order("created_at",{ascending:false});
+        l2List = l2||[];
+      }
+      let l3List = [];
+      const l2Ids = l2List.map(m=>m.id);
+      if(l2Ids.length) {
+        const { data:l3 } = await supabase.from("profiles").select("id,full_name,email,created_at").in("referred_by",l2Ids).order("created_at",{ascending:false});
+        l3List = l3||[];
+      }
+      const l3Ids = l3List.map(m=>m.id);
+      const allTeamIds = [...l1Ids, ...l2Ids, ...l3Ids];
+
+      let ownDeposits=0, l1Deposits=0, l2Deposits=0, l3Deposits=0;
+      const depIds = [target_user_id, ...allTeamIds];
+      const { data:deps } = await supabase.from("deposits").select("user_id,amount").eq("status","completed").in("user_id",depIds);
+      const l1Set=new Set(l1Ids), l2Set=new Set(l2Ids);
+      (deps||[]).forEach(d=>{
+        const amt=Number(d.amount||0);
+        if(d.user_id===target_user_id) ownDeposits+=amt;
+        else if(l1Set.has(d.user_id)) l1Deposits+=amt;
+        else if(l2Set.has(d.user_id)) l2Deposits+=amt;
+        else l3Deposits+=amt;
+      });
+
+      return res.json({
+        ok:true,
+        l1:l1WithStatus, l2:l2List, l3:l3List,
+        active_count: activeSet.size,
+        total_team: l1List.length + l2List.length + l3List.length,
+        own_deposits: ownDeposits,
+        l1_deposits: l1Deposits, l2_deposits: l2Deposits, l3_deposits: l3Deposits,
+        total_team_deposits: l1Deposits+l2Deposits+l3Deposits,
+        grand_total_deposits: ownDeposits+l1Deposits+l2Deposits+l3Deposits,
+      });
     }
 
     if(action==="products") {
