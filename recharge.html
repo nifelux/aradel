@@ -31,6 +31,8 @@
     .sb-success { background:var(--success-bg); color:var(--success); }
     .sb-failed  { background:var(--danger-bg); color:var(--danger); }
     .monnify-perm-note { background:var(--success-bg); border-radius:12px; padding:14px 16px; margin:0 16px 16px; font-size:12px; color:var(--success); line-height:1.5; }
+    .field-label { padding:0 16px; font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; margin-top:12px; }
+    .sender-hint { padding:0 16px; font-size:11px; color:var(--muted); margin-top:5px; }
   </style>
 </head>
 <body data-supabase-url="YOUR_SUPABASE_URL" data-supabase-anon="YOUR_SUPABASE_ANON_KEY">
@@ -53,6 +55,12 @@
       <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Or enter custom amount</label>
       <input class="field-input" type="number" id="customAmt" placeholder="Enter amount (min ₦500)" oninput="onCustomAmt(this.value)"/>
     </div>
+
+    <label class="field-label" for="senderName">Sender's name (as it appears on your bank account)</label>
+    <div style="padding:0 16px">
+      <input class="field-input" type="text" id="senderName" placeholder="e.g. John Doe" oninput="onSenderName(this.value)"/>
+    </div>
+    <div class="sender-hint">This helps us match your transfer to your account quickly.</div>
   </div>
 
   <div class="method-card" style="margin-top:16px" id="methodCard">
@@ -109,7 +117,7 @@
 <script src="assets/js/auth.js" defer></script>
 <script>
 (function(){
-  var selAmt=0,userId="",userEmail="",fullName="",activeMethod="manual",pollT=null,currentRef="";
+  var selAmt=0,senderName="",userId="",userEmail="",fullName="",activeMethod="manual",pollT=null,currentRef="";
   function waitSb(cb){if(window.sb&&window.AradelAuth){cb();return;}var t=setInterval(function(){if(window.sb&&window.AradelAuth){clearInterval(t);cb();}},50);}
 
   waitSb(async function(){
@@ -117,6 +125,8 @@
     userId=s.user.id; userEmail=s.user.email;
     var {data:prof}=await window.sb.from("profiles").select("full_name").eq("id",userId).single();
     fullName=prof?.full_name||"";
+    document.getElementById("senderName").value=fullName; // pre-fill with account name, user can edit
+    senderName=fullName;
     var {data:w}=await window.sb.from("wallets").select("balance").eq("user_id",userId).single();
     document.getElementById("walBal").textContent=window.AradelAuth.money(w?.balance||0);
 
@@ -176,13 +186,20 @@
     document.querySelectorAll(".amt-chip").forEach(function(c){c.classList.remove("on");});
     el.classList.add("on"); document.getElementById("customAmt").value="";
     selAmt=Number(el.dataset.v); updateAmtDisplay();
-    document.getElementById("rechBtn").disabled=false;
+    validateForm();
   };
   window.onCustomAmt=function(v){
     document.querySelectorAll(".amt-chip").forEach(function(c){c.classList.remove("on");});
     selAmt=Number(v)||0; updateAmtDisplay();
-    document.getElementById("rechBtn").disabled=selAmt<500;
+    validateForm();
   };
+  window.onSenderName=function(v){
+    senderName=v;
+    validateForm();
+  };
+  function validateForm(){
+    document.getElementById("rechBtn").disabled = !(selAmt>=500 && senderName.trim().length>0);
+  }
   function updateAmtDisplay(){
     var el=document.getElementById("ti-amt"),cp=document.getElementById("tiAmtCopy");
     if(selAmt>0){ el.textContent="₦"+selAmt.toLocaleString(); cp.style.display="inline"; }
@@ -191,6 +208,7 @@
 
   async function handleRecharge(){
     if(!selAmt||selAmt<500){ window.AradelAuth.toast("Minimum deposit is ₦500"); return; }
+    if(!senderName.trim()){ window.AradelAuth.toast("Please enter the sender's name"); return; }
     var btn=document.getElementById("rechBtn");
     btn.disabled=true; btn.textContent="Processing…";
     await doManual();
@@ -199,7 +217,7 @@
   async function doManual(){
     var btn=document.getElementById("rechBtn");
     try{
-      var r=await fetch("/api/deposit?action=initiate-manual",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:userId,amount:selAmt})});
+      var r=await fetch("/api/deposit?action=initiate-manual",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:userId,amount:selAmt,sender_name:senderName.trim()})});
       var d=await r.json();
       if(!d.ok){ window.AradelAuth.toast(d.error||"Error"); btn.disabled=false; btn.textContent="Continue"; return; }
       currentRef=d.reference;
@@ -245,5 +263,5 @@
 })();
 </script>
 </body>
-        </html>
-        
+      </html>
+  
