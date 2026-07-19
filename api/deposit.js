@@ -157,11 +157,12 @@ module.exports = async function handler(req, res) {
 
   if(req.method!=="POST") return res.status(405).json({ error:"Method not allowed" });
 
-  const { user_id, amount } = req.body;
+  const { user_id, amount, sender_name } = req.body;
 
   // POST: initiate-manual
   if(action==="initiate-manual") {
     if(!user_id || !amount) return res.status(400).json({ error:"user_id and amount required" });
+    if(!sender_name || !sender_name.trim()) return res.status(400).json({ error:"Sender name is required" });
     const num = Number(amount);
     if(num < 500) return res.status(400).json({ error:"Minimum deposit is ₦500" });
 
@@ -169,7 +170,7 @@ module.exports = async function handler(req, res) {
     const narration = genNarration(user_id);
 
     const { error } = await supabase.from("deposits").insert({
-      user_id, amount:num, reference, narration,
+      user_id, amount:num, reference, narration, sender_name: sender_name.trim(),
       status:"pending", method:"manual", provider:"manual",
       created_at: new Date().toISOString(),
     });
