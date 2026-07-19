@@ -451,7 +451,8 @@
       var banBtn = u.is_admin
         ? '<span style="margin-top:6px;display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.06);color:#8A7F78;font-size:10px;font-weight:700">Admin</span>'
         : '<button onclick="event.stopPropagation();toggleUserBan(\''+u.id+'\','+(!banned)+')" style="margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:'+(banned?'rgba(52,211,153,.12)':'rgba(239,68,68,.12)')+';color:'+(banned?'#34D399':'#f87171')+';font-size:10px;font-weight:700;cursor:pointer">'+(banned?'✅ Unban':'🚫 Ban')+'</button>';
-      return '<div class="user-row" onclick="openWalletModal(\''+u.id+'\')" style="'+(banned?'opacity:.55':'')+'"><div class="user-avatar">'+(u.full_name||u.email||"?")[0].toUpperCase()+'</div><div style="flex:1"><div class="user-name">'+(u.full_name||"—")+(u.is_admin?' <span style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;padding:2px 6px;border-radius:4px">Admin</span>':'')+(banned?' <span style="font-size:10px;background:rgba(239,68,68,.3);color:#fff;padding:2px 6px;border-radius:4px">🚫 Banned</span>':'')+' <span style="font-size:10px;color:#34D399">VIP '+u.vip_level+'</span></div><div class="user-meta">'+u.email+' · '+new Date(u.created_at).toLocaleDateString()+'</div></div><div style="text-align:right"><div class="user-bal">₦'+Number(u.wallets?.balance||0).toLocaleString()+'</div>'+banBtn+'</div></div>';
+      var teamBtn = '<button onclick="event.stopPropagation();openTeamModal(\''+u.id+'\')" style="margin-top:6px;margin-left:6px;padding:4px 10px;border-radius:6px;border:none;background:rgba(59,130,246,.14);color:#60A5FA;font-size:10px;font-weight:700;cursor:pointer">👥 Team</button>';
+      return '<div class="user-row" onclick="openWalletModal(\''+u.id+'\')" style="'+(banned?'opacity:.55':'')+'"><div class="user-avatar">'+(u.full_name||u.email||"?")[0].toUpperCase()+'</div><div style="flex:1"><div class="user-name">'+(u.full_name||"—")+(u.is_admin?' <span style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;padding:2px 6px;border-radius:4px">Admin</span>':'')+(banned?' <span style="font-size:10px;background:rgba(239,68,68,.3);color:#fff;padding:2px 6px;border-radius:4px">🚫 Banned</span>':'')+' <span style="font-size:10px;color:#34D399">VIP '+u.vip_level+'</span></div><div class="user-meta">'+u.email+' · '+new Date(u.created_at).toLocaleDateString()+'</div></div><div style="text-align:right"><div class="user-bal">₦'+Number(u.wallets?.balance||0).toLocaleString()+'</div><div>'+banBtn+teamBtn+'</div></div></div>';
     }).join("");
   }
   window.toggleUserBan=async function(userId,willBan){
@@ -508,6 +509,66 @@
     var d=await r.json();
     if(d.ok){ window.AradelAuth.toast("✅ Wallet "+(walletTargetType==="credit"?"credited":"debited")+" — new balance ₦"+Number(d.new_balance).toLocaleString()); document.getElementById("walletModal").remove(); loadUsers(); }
     else { al.textContent=d.error||"Error"; al.className="alert alert-error show"; btn.disabled=false; btn.textContent="Apply Adjustment"; }
+  };
+
+  var teamModalData=null;
+  window.openTeamModal=async function(userId){
+    var u=allUsers.find(function(x){return x.id===userId;});
+    if(!u){ window.AradelAuth.toast("User not found — try refreshing"); return; }
+    var modal=document.createElement("div");
+    modal.id="teamModal";
+    modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:flex-end;justify-content:center";
+    modal.innerHTML='<div style="background:#241B18;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;border:1px solid #3A2E29;max-height:85vh;overflow-y:auto">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:\'Fraunces\',serif;font-size:16px;font-weight:600;color:#fff">Team &amp; Deposits</div><button onclick="document.getElementById(\'teamModal\').remove()" style="background:rgba(255,255,255,.06);border:none;border-radius:50%;width:30px;height:30px;color:#8A7F78;font-size:16px;cursor:pointer">✕</button></div>'+
+      '<div style="font-size:13px;color:#8A7F78;margin-bottom:16px">'+(u.full_name||u.email||"User")+' · '+u.email+'</div>'+
+      '<div id="teamModalBody"><div class="loader-wrap"><div class="loader" style="border-color:#3A2E29;border-top-color:#B91C3C"></div></div></div>'+
+      '</div>';
+    document.body.appendChild(modal);
+
+    try {
+      var r=await fetch("/api/admin?action=user-team&target_user_id="+userId+"&admin_id="+adminId);
+      var d=await r.json();
+      if(!d.ok) throw new Error(d.error||"Failed to load team");
+      teamModalData=d;
+      renderTeamModalBody(1);
+    } catch(e){
+      var body=document.getElementById("teamModalBody");
+      if(body) body.innerHTML='<div style="text-align:center;color:#f87171;padding:20px;font-size:13px">Failed to load team data.</div>';
+    }
+  };
+
+  window.renderTeamModalBody=function(level){
+    var d=teamModalData;
+    var body=document.getElementById("teamModalBody");
+    if(!body||!d) return;
+    var members = level===1?d.l1:level===2?d.l2:d.l3;
+    var tabBtn=function(n,label){
+      return '<button onclick="renderTeamModalBody('+n+')" style="flex:1;padding:9px 4px;border-radius:8px;font-size:11.5px;font-weight:700;border:1.5px solid '+(level===n?'#B91C3C':'#3A2E29')+';background:'+(level===n?'linear-gradient(155deg,#B91C3C,#7F1228)':'#181210')+';color:'+(level===n?'#fff':'#8A7F78')+';cursor:pointer">'+label+'</button>';
+    };
+    var rows=(members||[]).length
+      ? members.map(function(m){
+          var active=m.isActive!==false;
+          var name=m.full_name||m.email||"User";
+          var statusChip = level===1
+            ? '<span style="font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+(active?'rgba(52,211,153,.12)':'rgba(255,255,255,.06)')+';color:'+(active?'#34D399':'#8A7F78')+'">'+(active?'Active':'Inactive')+'</span>'
+            : '';
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #3A2E29"><div style="width:34px;height:34px;border-radius:50%;background:#181210;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#B91C3C;flex-shrink:0">'+name[0].toUpperCase()+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">'+name+'</div><div style="font-size:10.5px;color:#8A7F78;margin-top:1px">Joined '+new Date(m.created_at).toLocaleDateString()+'</div></div>'+statusChip+'</div>';
+        }).join("")
+      : '<div style="text-align:center;color:#8A7F78;padding:20px;font-size:12.5px">No Level '+level+' members.</div>';
+
+    body.innerHTML=
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div style="background:#181210;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:#8A7F78;text-transform:uppercase">Own Deposits</div><div style="font-size:16px;font-weight:800;color:#34D399;margin-top:3px">₦'+Number(d.own_deposits||0).toLocaleString()+'</div></div>'+
+        '<div style="background:#181210;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:#8A7F78;text-transform:uppercase">Grand Total</div><div style="font-size:16px;font-weight:800;color:#34D399;margin-top:3px">₦'+Number(d.grand_total_deposits||0).toLocaleString()+'</div></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+
+        '<div style="background:#181210;border-radius:10px;padding:10px;text-align:center"><div style="font-size:9.5px;color:#8A7F78;text-transform:uppercase">L1 Deposits</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">₦'+Number(d.l1_deposits||0).toLocaleString()+'</div></div>'+
+        '<div style="background:#181210;border-radius:10px;padding:10px;text-align:center"><div style="font-size:9.5px;color:#8A7F78;text-transform:uppercase">L2 Deposits</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">₦'+Number(d.l2_deposits||0).toLocaleString()+'</div></div>'+
+        '<div style="background:#181210;border-radius:10px;padding:10px;text-align:center"><div style="font-size:9.5px;color:#8A7F78;text-transform:uppercase">L3 Deposits</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">₦'+Number(d.l3_deposits||0).toLocaleString()+'</div></div>'+
+      '</div>'+
+      '<div style="font-size:11.5px;color:#8A7F78;margin-bottom:10px">'+d.total_team+' total team members · '+d.active_count+' active investors</div>'+
+      '<div style="display:flex;gap:6px;margin-bottom:10px">'+tabBtn(1,"Level 1")+tabBtn(2,"Level 2")+tabBtn(3,"Level 3")+'</div>'+
+      '<div>'+rows+'</div>';
   };
 
   window.onTargetChange=function(v){ document.getElementById("userSearchWrap").style.display=v==="specific"?"block":"none"; };
