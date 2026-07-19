@@ -7,8 +7,41 @@
       try {
         var { data: { session } } = await window.sb.auth.getSession();
         if (!session) { location.href = "/index.html"; return null; }
+        var banned = await this._checkBanned(session.user.id);
+        if (banned) { await this._forceBannedRedirect(); return null; }
+        this._startBanWatch(session.user.id);
         return session;
       } catch(e) { location.href = "/index.html"; return null; }
+    },
+
+    // Returns true only when we positively confirmed is_active === false.
+    // Any lookup failure (network blip, etc.) fails OPEN — we never want
+    // a transient error to lock a legitimate user out.
+    _checkBanned: async function (userId) {
+      try {
+        var { data } = await window.sb.from("profiles").select("is_active").eq("id", userId).single();
+        return !!data && data.is_active === false;
+      } catch(e) { return false; }
+    },
+
+    _forceBannedRedirect: async function () {
+      if (window.sb) { try { await window.sb.auth.signOut(); } catch(e){} }
+      location.href = "/banned.html";
+    },
+
+    // Catches the case where a user is banned while they already have a
+    // page open — requireAuth only runs once per page load, so without
+    // this an already-signed-in banned user could keep using the app
+    // until their session naturally expired or they navigated again.
+    _banWatchStarted: false,
+    _startBanWatch: function (userId) {
+      if (this._banWatchStarted) return;
+      this._banWatchStarted = true;
+      var self = this;
+      setInterval(async function () {
+        var banned = await self._checkBanned(userId);
+        if (banned) await self._forceBannedRedirect();
+      }, 60000);
     },
 
     requireAdmin: async function () {
@@ -72,4 +105,4 @@
     }
   };
 })();
-    
+        
