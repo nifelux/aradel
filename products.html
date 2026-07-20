@@ -311,7 +311,8 @@
     if(!prods||!prods.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📭</div><p>No products available.</p></div>'; return; }
     el.innerHTML=prods.map(function(p){
       var locked=p.status==="locked"||(type==="vip"&&userVip<vipLevel);
-      var bought=userProducts.includes(p.id);
+      var purchaseCount=userProducts.filter(function(id){return id===p.id;}).length;
+      var atLimit=purchaseCount>=2;
       var hdr=locked?'background:linear-gradient(155deg,#94A3B8,#CBD5E1)':'background:linear-gradient(155deg,var(--red),var(--red-dark))';
       return '<div class="product-card"><div class="product-header" style="'+hdr+'">'+
         '<div class="product-type-badge">'+(type==="vip"?"VIP "+vipLevel:"Newbie")+'</div>'+
@@ -320,7 +321,7 @@
         '<div class="product-stats"><div class="pstat"><div class="pstat-val">'+window.AradelAuth.money(p.daily_income)+'</div><div class="pstat-lbl">Daily</div></div>'+
         '<div class="pstat"><div class="pstat-val">'+p.duration_days+'d</div><div class="pstat-lbl">Duration</div></div>'+
         '<div class="pstat"><div class="pstat-val">'+window.AradelAuth.money(p.total_return)+'</div><div class="pstat-lbl">Total</div></div></div>'+
-        '<div class="product-footer">'+(bought?'<div class="bought-chip">✅ Already Purchased</div>':locked?'<div class="bought-chip">🔒 '+(p.status==="locked"?"Locked by Admin":"VIP "+vipLevel+" Required")+'</div>':'<button class="btn btn-primary" onclick="openModal(\''+p.id+'\',\''+p.name+'\','+p.price+')">Buy Now</button>')+'</div></div>';
+        '<div class="product-footer">'+(atLimit?'<div class="bought-chip">✅ Already Purchased (2/2)</div>':locked?'<div class="bought-chip">🔒 '+(p.status==="locked"?"Locked by Admin":"VIP "+vipLevel+" Required")+'</div>':'<button class="btn btn-primary" onclick="openModal(\''+p.id+'\',\''+p.name+'\','+p.price+')">'+(purchaseCount===1?"Buy Again":"Buy Now")+'</button>'+(purchaseCount===1?'<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">You\'ve purchased this once — 1 more allowed</div>':''))+'</div></div>';
     }).join("");
   }
 
@@ -337,7 +338,7 @@
     var btn=document.getElementById("confirmBtn"); var alertEl=document.getElementById("modalAlert");
     btn.disabled=true; btn.textContent="Purchasing…"; alertEl.className="alert";
     var {data,error}=await window.sb.rpc("purchase_product",{p_user_id:userId,p_product_id:pendingProductId});
-    if(error||!data?.ok){ alertEl.textContent=data?.error||error?.message||"Purchase failed."; alertEl.className="alert alert-error show"; btn.disabled=false; btn.textContent="Confirm"; return; }
+    if(error||!data?.ok){ var errMsg=data?.error==="purchase_limit_reached"?"You've already purchased this product twice — that's the limit.":(data?.error||error?.message||"Purchase failed."); alertEl.textContent=errMsg; alertEl.className="alert alert-error show"; btn.disabled=false; btn.textContent="Confirm"; return; }
     window.AradelAuth.toast("✅ Product purchased successfully!"); closeModal();
     var {data:w}=await window.sb.from("wallets").select("balance").eq("user_id",userId).single(); walletBal=w?.balance||0;
     var {data:up}=await window.sb.from("user_products").select("product_id").eq("user_id",userId); userProducts=(up||[]).map(function(x){return x.product_id;});
