@@ -18,6 +18,7 @@
  * POST ?action=set-bank-details         { bank_name, account_number, account_name }
  * POST ?action=set-welcome-bonus        { enabled, amount }
  * POST ?action=set-invest-gate          { required }
+ * POST ?action=set-referral-gate        { required }
  * POST ?action=set-vip-enabled          { enabled }
  * POST ?action=set-withdrawal-fee       { percent }
  * POST ?action=set-referral-settings    { levels, l1, l2, l3 }
@@ -172,6 +173,7 @@ module.exports = async function(req, res) {
     if(action==="extra-settings") {
       const keys = ["deposit_bank_name","deposit_account_number","deposit_account_name",
         "welcome_bonus_enabled","welcome_bonus_amount","require_invest_before_withdraw",
+        "require_active_referral_to_withdraw",
         "vip_enabled","withdrawal_fee_percent","referral_levels",
         "referral_l1_percent","referral_l2_percent","referral_l3_percent"];
       const { data,error } = await supabase.from("site_settings").select("key,value").in("key",keys);
@@ -253,6 +255,13 @@ module.exports = async function(req, res) {
   if(action==="set-invest-gate") {
     const { required } = req.body;
     const { error } = await supabase.from("site_settings").upsert({ key:"require_invest_before_withdraw", value: required?"true":"false", updated_at:new Date().toISOString() });
+    if(error) return res.status(500).json({ error:error.message });
+    return res.json({ ok:true });
+  }
+
+  if(action==="set-referral-gate") {
+    const { required } = req.body;
+    const { error } = await supabase.from("site_settings").upsert({ key:"require_active_referral_to_withdraw", value: required?"true":"false", updated_at:new Date().toISOString() });
     if(error) return res.status(500).json({ error:error.message });
     return res.json({ ok:true });
   }
