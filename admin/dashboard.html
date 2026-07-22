@@ -216,6 +216,11 @@
           <button id="investGateToggle" onclick="toggleInvestGate()" style="flex-shrink:0;width:52px;height:30px;border-radius:20px;border:none;cursor:pointer;position:relative;background:#3A2E29"><span id="investGateKnob" style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s"></span></button>
         </div>
         <div style="height:1px;background:#3A2E29;margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div><div style="font-size:14px;font-weight:700;color:#fff">Require an active referral to withdraw</div><div style="font-size:12px;color:#8A7F78;margin-top:2px" id="referralGateDesc">Loading…</div></div>
+          <button id="referralGateToggle" onclick="toggleReferralGate()" style="flex-shrink:0;width:52px;height:30px;border-radius:20px;border:none;cursor:pointer;position:relative;background:#3A2E29"><span id="referralGateKnob" style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s"></span></button>
+        </div>
+        <div style="height:1px;background:#3A2E29;margin:16px 0"></div>
         <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">Withdrawal Fee</div>
         <div class="a-field"><label class="a-label">Fee (% of amount withdrawn)</label><input id="withdrawFeeInput" class="a-input" type="number" min="0" max="100" step="0.1"/></div>
         <button onclick="saveWithdrawalFee()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(155deg,#B91C3C,#7F1228);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Save Fee</button>
@@ -765,6 +770,9 @@
     investGateOn = extraSettings.require_invest_before_withdraw==="true";
     applyInvestGateUI();
 
+    referralGateOn = extraSettings.require_active_referral_to_withdraw==="true";
+    applyReferralGateUI();
+
     vipEnabledOn = extraSettings.vip_enabled!=="false";
     applyVipEnabledUI();
 
@@ -815,6 +823,21 @@
     var d=await r.json();
     if(d.ok){ investGateOn=newState; applyInvestGateUI(); window.AradelAuth.toast(investGateOn?"🔒 Investment now required to withdraw":"✅ Requirement removed"); }
     else { window.AradelAuth.toast("❌ "+d.error); applyInvestGateUI(); }
+  };
+
+  var referralGateOn=false;
+  function applyReferralGateUI(){
+    var toggle=document.getElementById("referralGateToggle"),knob=document.getElementById("referralGateKnob"),desc=document.getElementById("referralGateDesc");
+    if(referralGateOn){ toggle.style.background="#00c853"; knob.style.transform="translateX(22px)"; desc.textContent="✅ On — users need a referral who has made a purchase to withdraw"; desc.style.color="#34D399"; }
+    else { toggle.style.background="#3A2E29"; knob.style.transform="translateX(0)"; desc.textContent="Off — referrals not required to withdraw"; desc.style.color="#8A7F78"; }
+  }
+  window.toggleReferralGate=async function(){
+    var newState=!referralGateOn;
+    document.getElementById("referralGateDesc").textContent="Updating…";
+    var r=await fetch("/api/admin?action=set-referral-gate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({required:newState,admin_id:adminId})});
+    var d=await r.json();
+    if(d.ok){ referralGateOn=newState; applyReferralGateUI(); window.AradelAuth.toast(referralGateOn?"🔒 Active referral now required to withdraw":"✅ Requirement removed"); }
+    else { window.AradelAuth.toast("❌ "+d.error); applyReferralGateUI(); }
   };
 
   var vipEnabledOn=true;
