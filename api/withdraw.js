@@ -61,6 +61,7 @@ module.exports = async function(req, res) {
       below_minimum:        `Minimum withdrawal is ₦${Number(data.min||0).toLocaleString()}`,
       above_maximum:        `Maximum withdrawal is ₦${Number(data.max||0).toLocaleString()}`,
       investment_required:  "You need an active investment before you can withdraw.",
+      active_referral_required: "You need at least one referral who has made a purchase before you can withdraw.",
       insufficient_balance: "Insufficient balance",
     };
     return res.json({ ok:false, error: messages[data?.error] || data?.error || "Withdrawal failed" });
